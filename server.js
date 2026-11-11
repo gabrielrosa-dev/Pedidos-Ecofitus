@@ -26,6 +26,7 @@ const assets = {
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/config.js': ['config.js', 'text/javascript; charset=utf-8'],
   '/experience.js': ['experience.js', 'text/javascript; charset=utf-8'],
+  '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
   '/campaigns.js': ['campaigns.js', 'text/javascript; charset=utf-8'],
   '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json; charset=utf-8'],
   '/sw.js': ['sw.js', 'text/javascript; charset=utf-8'],
@@ -199,7 +200,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         'Content-Type': type,
         'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'self'; img-src 'self' https:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+        'Content-Security-Policy': "default-src 'self'; img-src 'self' https:; style-src 'self'; script-src 'self' https://script.google.com https://*.googleusercontent.com; frame-src https://script.google.com https://*.googleusercontent.com; base-uri 'none'; form-action 'self' https://script.google.com https://*.googleusercontent.com; frame-ancestors 'none'",
       });
       return res.end(content);
     }

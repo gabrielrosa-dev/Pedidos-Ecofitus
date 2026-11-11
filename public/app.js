@@ -2,13 +2,6 @@
 
 const $ = (id) => document.getElementById(id);
 const money = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const apiBase = window.ECOFITUS_API_BASE.replace(/\/$/, '');
-function api(path) {
-  if (!apiBase && location.hostname.endsWith('.github.io')) {
-    throw new Error('Backend ainda não configurado. Entre em contato com a equipe comercial.');
-  }
-  return `${apiBase}${path}`;
-}
 let catalog = [];
 let updatedAt = 0;
 let stale = true;
@@ -220,9 +213,7 @@ function renderCart() {
 
 async function loadCatalog() {
   try {
-    const response = await fetch(api('/api/catalog'), { cache: 'no-store' });
-    if (!response.ok) throw new Error('Não foi possível carregar o catálogo.');
-    const data = await response.json();
+    const data = await window.ecofitusRequest('/api/catalog');
     if (!Array.isArray(data.products)) throw new Error('Resposta do catálogo inválida.');
     if (updatedAt && data.updatedAt !== updatedAt) invalidateOrder();
     catalog = data.products;
@@ -306,12 +297,7 @@ function lookupCompany(cnpj, version) {
   $('company-status').textContent = 'Consultando razão social...';
   const request = (async () => {
     try {
-      const response = await fetch(api('/api/company'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnpj }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Não foi possível consultar o CNPJ.');
+      const result = await window.ecofitusRequest('/api/company', { cnpj });
       if (version !== lookupVersion) return false;
       verifiedCnpj = result.cnpj;
       $('company-status').textContent = `Razão social: ${result.name} (BrasilAPI)`;
@@ -341,19 +327,13 @@ $('order-form').addEventListener('submit', async (event) => {
       if (!await lookupCompany(cnpj, lookupVersion)) throw new Error('Não foi possível confirmar a razão social. Verifique a mensagem abaixo do CNPJ.');
       if (submittedVersion !== orderVersion) throw new Error('Os dados foram alterados. Prepare o pedido novamente.');
     }
-    const response = await fetch(api('/api/order'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const result = await window.ecofitusRequest('/api/order', {
         id: orderId,
         cnpj: $('cnpj').value,
         terms: $('terms').value,
         items: Array.from(cart, ([id, quantity]) => ({ id, quantity })),
         campaigns: Array.from(selectedCampaigns),
-      }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Não foi possível preparar o pedido.');
     if (submittedVersion !== orderVersion) {
       throw new Error('O pedido anterior foi salvo no histórico, mas os dados foram alterados. Prepare o pedido atualizado novamente.');
     }
