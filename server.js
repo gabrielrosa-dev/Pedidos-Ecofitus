@@ -33,7 +33,6 @@ const assets = {
   '/offline.html': ['offline.html', 'text/html; charset=utf-8'],
   '/icons/icon-192.png': ['icons/icon-192.png', 'image/png'],
   '/icons/icon-512.png': ['icons/icon-512.png', 'image/png'],
-  '/images/logo.png': ['images/logo.png', 'image/png'],
   '/images/campaigns/b12-pix.jpeg': ['images/campaigns/b12-pix.jpeg', 'image/jpeg'],
   '/images/campaigns/barril-chopp.jpeg': ['images/campaigns/barril-chopp.jpeg', 'image/jpeg'],
   '/images/campaigns/q10-b12.jpeg': ['images/campaigns/q10-b12.jpeg', 'image/jpeg'],

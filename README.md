@@ -2,6 +2,16 @@
 
 Loja com catálogo, consulta de razão social, histórico privado e pedido por WhatsApp. A interface é publicada no GitHub Pages e pode usar Google Apps Script e uma planilha privada como serviço de pedidos, sem servidor Windows. O GitHub Pages não executa código no servidor nem grava pedidos por conta própria.
 
+## Estrutura
+
+- `public/`: interface, campanhas e arquivos de instalação publicados pelo GitHub Pages.
+- `apps-script/`: integração com Google Planilhas e arquivos gerados com as regras compartilhadas.
+- `test/`: testes automatizados.
+- `server.js`, `catalog.js`, `orders.js`, `registry.js`, `sync-catalog.ps1` e `admin/`: alternativa de servidor local.
+- `data/`: cache e pedidos locais; permanece fora do repositório. A pasta original `Campanhas/` também fica local; o site usa as imagens selecionadas em `public/images/campaigns/`.
+
+O arquivo de cache `data/catalog.json` constava em uma versão antiga do repositório público. Sua remoção da versão atual não remove cópias anteriores do histórico Git; não armazene pedidos ou informações privadas no repositório.
+
 ## Configurar Google Planilhas e Apps Script
 
 1. Crie uma planilha Google e mantenha o compartilhamento **restrito** à equipe comercial. O ID é o trecho entre `/d/` e `/edit` no endereço da planilha. Não publique a planilha nem coloque informações de compradores no GitHub.
