@@ -63,19 +63,19 @@ function setup() {
   if (orders.getLastRow() === 0) {
     orders.appendRow(['Número do pedido', 'Data UTC', 'CNPJ', 'Razão social', 'Prazo', 'Produtos', 'Campanhas', 'Total (R$)', 'Mensagem', 'Dados JSON']);
   }
-  catalog_();
 }
 
 function catalog_() {
-  const properties = PropertiesService.getScriptProperties();
+  const cache = CacheService.getScriptCache();
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    const timestamp = Number(properties.getProperty('catalogUpdatedAt') || 0);
-    const fileId = properties.getProperty('catalogFileId');
-    if (fileId && Date.now() - timestamp < CATALOG_MAX_AGE) {
-      const cached = JSON.parse(DriveApp.getFileById(fileId).getBlob().getDataAsString('UTF-8'));
-      return { products: cached, updatedAt: timestamp, stale: false, error: null };
+    const stored = cache.get('catalog');
+    if (stored) {
+      const cached = JSON.parse(stored);
+      if (Date.now() >= cached.updatedAt && Date.now() - cached.updatedAt < CATALOG_MAX_AGE) {
+        return { products: cached.products, updatedAt: cached.updatedAt, stale: false, error: null };
+      }
     }
     let page = 0;
     let pages = 1;
@@ -99,15 +99,13 @@ function catalog_() {
     } while (page < pages);
     const normalized = catalogCore_().normalizeCatalog({ products });
     if (!normalized.length) throw new Error('Catálogo sem produtos.');
-    let file;
-    if (fileId) file = DriveApp.getFileById(fileId);
-    else {
-      file = DriveApp.createFile('Ecofitus-catalogo-cache.json', '[]', MimeType.PLAIN_TEXT);
-      properties.setProperty('catalogFileId', file.getId());
-    }
-    file.setContent(JSON.stringify(normalized));
     const updatedAt = Date.now();
-    properties.setProperty('catalogUpdatedAt', String(updatedAt));
+    const snapshot = JSON.stringify({ products: normalized, updatedAt });
+    if (Utilities.newBlob(snapshot).getBytes().length <= 90000) {
+      cache.put('catalog', snapshot, CATALOG_MAX_AGE / 1000);
+    } else {
+      console.warn('Catálogo excede o limite de cache; a próxima consulta buscará os dados novamente na Nexfar.');
+    }
     return { products: normalized, updatedAt, stale: false, error: null };
   } finally {
     lock.releaseLock();
