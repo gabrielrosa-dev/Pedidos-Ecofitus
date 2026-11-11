@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183c2b">
+  <meta name="description" content="Conheça os produtos Ecofitus e envie seu pedido pelo WhatsApp.">
+  <title>Ecofitus | Catálogo de produtos</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="topline">CUIDADO QUE VEM DA NATUREZA <span>✦</span> PEDIDO MÍNIMO DE R$ 50,00</div>
+  <header class="header">
+    <a class="brand" href="/" aria-label="Ecofitus, início"><span class="brand-mark">e<span>✳</span></span><span>eco<span>fitus</span><small>CATÁLOGO DE PRODUTOS</small></span></a>
+    <nav><a href="#produtos">Produtos</a><a href="#como-funciona">Como comprar</a></nav>
+    <button class="cart-button" id="open-cart" type="button"><span aria-hidden="true">▢</span> Meu pedido <b id="cart-count">0</b></button>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow"><span>✳</span> BEM-VINDO AO CATÁLOGO ECOFITUS</p>
+        <h1>Mais cuidado,<br><em>mais natureza.</em></h1>
+        <p class="hero-copy">Produtos que fazem bem, em um só lugar. Encontre seus favoritos e faça seu pedido de um jeito simples.</p>
+        <a class="hero-button" href="#produtos">Explorar produtos <span>↗</span></a>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-circle"></div><div class="art-leaf leaf-one">✳</div><div class="art-leaf leaf-two">✳</div>
+        <div class="art-card"><span>ESSENCIALMENTE</span><strong>natural.</strong><small>PARA CUIDAR DE VOCÊ</small></div>
+        <div class="art-badge">BEM-ESTAR<br><strong>todos os dias</strong> ✳</div>
+      </div>
+    </section>
+    <section class="benefits" id="como-funciona">
+      <div><span class="benefit-icon">✳</span><p><strong>Escolha seus produtos</strong><small>Explore nosso catálogo completo</small></p></div>
+      <div><span class="benefit-icon">▢</span><p><strong>Monte seu pedido</strong><small>Pedido mínimo de R$ 50,00</small></p></div>
+      <div><span class="benefit-icon">↗</span><p><strong>Envie pelo WhatsApp</strong><small>Nossa equipe confirma com você</small></p></div>
+    </section>
+    <section class="catalog" id="produtos">
+      <div class="section-heading">
+        <div><p class="eyebrow">ESCOLHIDOS PARA VOCÊ</p><h2>Nosso catálogo<span>.</span></h2><p>Encontre os produtos ideais para o seu negócio.</p></div>
+        <div class="catalog-meta"><span class="status-dot"></span><span id="sync-status" role="status">Conectando ao catálogo...</span></div>
+      </div>
+      <div class="toolbar">
+        <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Busque por nome ou código..." aria-label="Buscar produtos"></label>
+        <label class="sort-label">Ordenar por <select id="sort" aria-label="Ordenar produtos"><option value="name">Nome A–Z</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option></select></label>
+      </div>
+      <div class="results-line"><span id="result-count">Carregando produtos...</span><span>Preços finais da tabela</span></div>
+      <p class="notice" id="catalog-error" role="alert" hidden></p>
+      <div class="product-grid" id="products"></div>
+      <p class="empty" id="empty" hidden>Nenhum produto encontrado. Tente outra busca.</p>
+    </section>
+  </main>
+  <footer><div class="footer-brand">eco<span>fitus</span><small>Mais natureza no seu dia.</small></div><p>Catálogo de produtos · Pedidos sujeitos à confirmação comercial.</p><a href="#produtos">Voltar ao catálogo ↑</a></footer>
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="cart" id="cart" aria-label="Meu pedido" aria-hidden="true">
+    <div class="cart-header"><div><p class="eyebrow">SELEÇÃO ESPECIAL</p><h2>Meu pedido<span>.</span></h2></div><button class="close" id="close-cart" type="button" aria-label="Fechar pedido">×</button></div>
+    <div class="cart-body">
+      <p class="cart-intro">Confira seus produtos antes de enviar.</p>
+      <div id="cart-items"></div>
+      <p id="cart-empty" class="cart-empty">Seu pedido ainda está vazio.<br><small>Escolha produtos no catálogo para começar.</small></p>
+      <div class="total-row"><span>Total dos produtos</span><strong id="cart-total">R$ 0,00</strong></div>
+      <div class="minimum"><div class="progress"><div id="progress-bar"></div></div><p id="minimum-text">Pedido mínimo de R$ 50,00</p></div>
+      <form id="order-form">
+        <label>CNPJ do comprador<input id="cnpj" name="cnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" required maxlength="18"></label>
+        <label>Prazo liberado<input id="terms" name="terms" placeholder="Ex.: 28 dias" required minlength="2" maxlength="100"></label>
+        <p class="form-note">O prazo informado será conferido pela equipe comercial. Preços e disponibilidade também estão sujeitos à confirmação.</p>
+        <button class="submit-button" type="submit" id="submit-order">Preparar pedido <span>↗</span></button>
+        <p class="form-error" id="order-error" role="alert" hidden></p>
+        <a class="whatsapp-link" id="whatsapp-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Enviar pedido pelo WhatsApp ↗</a>
+        <p class="privacy-note">Ao enviar, o CNPJ, prazo e itens serão compartilhados pelo WhatsApp com nossa equipe.</p>
+      </form>
+    </div>
+  </aside>
+</body>
+</html>

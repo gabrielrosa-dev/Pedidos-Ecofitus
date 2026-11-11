@@ -1,0 +1,13 @@
+{
+  "name": "pedidos-ecofitus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Catálogo Ecofitus com pedidos por WhatsApp",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
