@@ -1,5 +1,6 @@
 'use strict';
 
+const { getCampaign, campaigns } = require('./public/campaigns');
 const MAX_AGE_MS = 10 * 60 * 1000;
 const MINIMUM_CENTS = 5000;
 
@@ -58,47 +59,80 @@ function validCnpj(value) {
   return true;
 }
 
-function buildOrder(input, catalog, updatedAt, now = Date.now()) {
+function calculateOrder(input, catalog) {
+  if (!Array.isArray(input.items) || input.items.length > catalog.length ||
+      !Array.isArray(input.campaigns) || input.campaigns.length > campaigns.length ||
+      (!input.items.length && !input.campaigns.length)) {
+    throw new Error('Adicione produtos ao pedido.');
+  }
+  const products = new Map(catalog.map((p) => [p.id, p]));
+  const seen = new Set();
+  const quantities = new Map();
+  let total = 0;
+  const reserve = (product, quantity) => {
+    const combined = (quantities.get(product.id) || 0) + quantity;
+    if (!Number.isSafeInteger(combined) || combined > product.stock || combined % product.multiple !== 0) {
+      throw new Error('Há produtos indisponíveis ou quantidades inválidas. Revise seu carrinho.');
+    }
+    quantities.set(product.id, combined);
+  };
+  const items = input.items.map((item) => {
+    const product = item && products.get(item.id);
+    if (!product || seen.has(item.id) || !Number.isSafeInteger(item.quantity) ||
+        item.quantity < 1 || item.quantity % product.multiple !== 0) {
+      throw new Error('Há produtos indisponíveis ou quantidades inválidas. Revise seu carrinho.');
+    }
+    seen.add(item.id);
+    reserve(product, item.quantity);
+    total += product.priceCents * item.quantity;
+    return { id: product.id, name: product.name, ean: product.ean, quantity: item.quantity, priceCents: product.priceCents };
+  });
+  const seenCampaigns = new Set();
+  const selectedCampaigns = input.campaigns.map((id) => {
+    if (typeof id !== 'string' || seenCampaigns.has(id)) throw new Error('Campanha inválida ou duplicada.');
+    seenCampaigns.add(id);
+    const campaign = getCampaign(id, catalog);
+    const lines = campaign.lines.map((line) => {
+      reserve(line.product, line.quantity + line.bonus);
+      return { id: line.product.id, name: line.product.name, ean: line.product.ean, quantity: line.quantity, bonus: line.bonus, priceCents: line.priceCents };
+    });
+    total += campaign.totalCents;
+    return { id, title: campaign.title, benefit: campaign.benefit, items: lines, totalCents: campaign.totalCents };
+  });
+  if (!Number.isSafeInteger(total)) throw new Error('Valor do pedido inválido.');
+  if (total < MINIMUM_CENTS) throw new Error('O pedido mínimo é de R$ 50,00.');
+  return { items, campaigns: selectedCampaigns, totalCents: total };
+}
+
+function buildOrder(input, catalog, updatedAt, companyName, now = Date.now()) {
   if (!updatedAt || now - updatedAt > MAX_AGE_MS || now < updatedAt) {
     throw new Error('Catálogo desatualizado. Aguarde a atualização para enviar o pedido.');
   }
   if (!input || typeof input.cnpj !== 'string' || !validCnpj(input.cnpj)) {
     throw new Error('Informe um CNPJ válido.');
   }
+  if (typeof companyName !== 'string' || !companyName.trim()) {
+    throw new Error('Não foi possível confirmar a razão social.');
+  }
   if (typeof input.terms !== 'string' || input.terms.trim().length < 2 ||
       input.terms.trim().length > 100 || /[\r\n]/.test(input.terms)) {
     throw new Error('Informe o prazo liberado em até 100 caracteres.');
   }
-  if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > catalog.length) {
-    throw new Error('Adicione produtos ao pedido.');
+  const result = calculateOrder({ ...input, campaigns: input.campaigns === undefined ? [] : input.campaigns }, catalog);
+  const formatLine = (item) => `${item.name.replace(/[\r\n]/g, ' ')} (${item.ean || item.id}) — ${item.quantity} x ${money(item.priceCents)} = ${money(item.quantity * item.priceCents)}${item.bonus ? ` + ${item.bonus} bonificadas` : ''}`;
+  const lines = result.items.map(formatLine);
+  for (const campaign of result.campaigns) {
+    lines.push('', `*Campanha: ${campaign.title}*`, ...campaign.items.map(formatLine), `Benefício solicitado: ${campaign.benefit}`, `Subtotal campanha: ${money(campaign.totalCents)}`);
   }
-  const products = new Map(catalog.map((p) => [p.id, p]));
-  const seen = new Set();
-  let total = 0;
-  const lines = input.items.map((item) => {
-    const product = item && products.get(item.id);
-    if (!product || seen.has(item.id) || !Number.isSafeInteger(item.quantity) ||
-        item.quantity < 1 || item.quantity > product.stock ||
-        item.quantity % product.multiple !== 0) {
-      throw new Error('Há produtos indisponíveis ou quantidades inválidas. Revise seu carrinho.');
-    }
-    seen.add(item.id);
-    const subtotal = product.priceCents * item.quantity;
-    if (!Number.isSafeInteger(subtotal) || !Number.isSafeInteger(total + subtotal)) {
-      throw new Error('Valor do pedido inválido.');
-    }
-    total += subtotal;
-    return `${product.name.replace(/[\r\n]/g, ' ')} (${product.ean || product.id}) — ${item.quantity} x ${money(product.priceCents)} = ${money(subtotal)}`;
-  });
-  if (total < MINIMUM_CENTS) throw new Error('O pedido mínimo é de R$ 50,00.');
   return [
     '*Pedido Ecofitus*',
     `CNPJ: ${input.cnpj.replace(/\D/g, '')}`,
+    `Razão social: ${companyName.replace(/[\r\n]/g, ' ').trim()}`,
     `Prazo informado: ${input.terms.trim()}`,
     '',
     ...lines,
     '',
-    `*Total: ${money(total)}*`,
+    `*Total: ${money(result.totalCents)}*`,
     'Prazo, preços e disponibilidade sujeitos à confirmação comercial.',
   ].join('\n');
 }
@@ -107,4 +141,4 @@ function money(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-module.exports = { normalizeCatalog, validCnpj, buildOrder, MAX_AGE_MS, MINIMUM_CENTS };
+module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, MAX_AGE_MS, MINIMUM_CENTS };

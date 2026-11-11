@@ -19,19 +19,21 @@ test('valida CNPJ, incluindo dígitos verificadores', () => {
   assert.equal(validCnpj('11.111.111/1111-11'), false);
 });
 test('aceita exatamente R$ 50 e calcula o total pelo catálogo', () => {
-  const message = buildOrder({ ...order, total: 1 }, products, now, now);
+  const message = buildOrder({ ...order, total: 1 }, products, now, 'Empresa Teste', now);
   assert.match(message, /Total: R\$ 50,00/);
   assert.match(message, /Prazo informado: 28 dias/);
+  assert.match(message, /Razão social: Empresa Teste/);
 });
 test('recusa mínimo não atingido e estoque ou múltiplo inválidos', () => {
-  assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity: 2 }] }, products, now, now), /mínimo/);
+  assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity: 2 }] }, products, now, 'Empresa Teste', now), /mínimo/);
   for (const quantity of [3, 12, 0, -2, 1.5]) {
-    assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity }] }, products, now, now), /quantidades inválidas/);
+    assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity }] }, products, now, 'Empresa Teste', now), /quantidades inválidas/);
   }
-  assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity: 4 }, { id: 'a', quantity: 4 }] }, [...products, products[0]], now, now), /quantidades inválidas/);
+  assert.throws(() => buildOrder({ ...order, items: [{ id: 'a', quantity: 4 }, { id: 'a', quantity: 4 }] }, [...products, products[0]], now, 'Empresa Teste', now), /quantidades inválidas/);
 });
 test('recusa catálogo antigo e dados inválidos', () => {
-  assert.throws(() => buildOrder(order, products, now - MAX_AGE_MS - 1, now), /desatualizado/);
-  assert.throws(() => buildOrder({ ...order, cnpj: '123' }, products, now, now), /CNPJ/);
-  assert.throws(() => buildOrder({ ...order, terms: '28 dias\noutro' }, products, now, now), /prazo/);
+  assert.throws(() => buildOrder(order, products, now - MAX_AGE_MS - 1, 'Empresa Teste', now), /desatualizado/);
+  assert.throws(() => buildOrder({ ...order, cnpj: '123' }, products, now, 'Empresa Teste', now), /CNPJ/);
+  assert.throws(() => buildOrder({ ...order, terms: '28 dias\noutro' }, products, now, 'Empresa Teste', now), /prazo/);
+  assert.throws(() => buildOrder(order, products, now, '', now), /razão social/);
 });

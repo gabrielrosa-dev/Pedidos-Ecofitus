@@ -1,0 +1,38 @@
+:root{font-family:Arial,sans-serif;color:#193e2c;background:#fafbf8;font-synthesis:none}
+.lookup-button{background:#eaf2e4;color:#204c33;border:0;border-radius:5px;padding:10px 14px;font-size:12px;font-weight:700}
+.lookup-button:disabled{opacity:.6;cursor:wait}
+.admin-main{max-width:1000px;margin:40px auto;padding:0 20px}
+.admin-order{background:white;border:1px solid #e5ebe2;border-radius:6px;padding:20px;margin:15px 0}
+.admin-order pre{font:13px/1.6 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-order a{display:inline-block;color:#258449;font-weight:700}
+.official-brand{display:flex;flex-direction:column;align-items:flex-start;gap:2px;letter-spacing:normal}
+.official-brand img{display:block;width:145px;height:50px;object-fit:contain}
+.official-brand small{color:#889487;font-size:8px;letter-spacing:1.5px}
+.header-actions{display:flex;align-items:center;gap:10px}
+.install-button{border:1px solid #d5e0d1;background:#eff5e9;color:#204c33;border-radius:7px;padding:12px 14px;font-size:12px;font-weight:700}
+.install-button:hover{background:#dfead7}
+.install-status{margin:0;padding:12px 6%;background:#eef4e9;color:#315b3c;font-size:12px;line-height:1.5}
+.campaign-section{max-width:1440px;margin:auto;padding:65px 6% 45px}
+.campaign-heading h2{font:40px Georgia,serif;letter-spacing:-1px;margin:12px 0}
+.campaign-heading h2 span{color:#8bac68}
+.campaign-heading>div>p:last-child{font-size:13px;color:#87968a}
+.campaign-carousel{margin-top:24px;background:#e8f0df;border-radius:8px;padding:20px;overflow:hidden}
+.campaign-slide{height:clamp(340px,60vw,600px);display:flex;justify-content:center;align-items:center}
+.campaign-slide img{display:block;max-height:100%;max-width:100%;object-fit:contain;border-radius:4px}
+.campaign-controls{display:flex;justify-content:center;align-items:center;gap:14px;padding-top:16px;color:#315b3c;font-size:12px}
+.campaign-controls button{border:1px solid #cbdcc3;border-radius:5px;background:#fff;color:#204c33;padding:8px 13px;font-weight:700}
+.campaign-controls button:hover{background:#dfead7}
+.footer-logo{display:block;width:125px;background:#fff;border-radius:4px}
+@media(max-width:650px){.official-brand img{width:105px;height:36px}.official-brand small{font-size:6px;letter-spacing:1px}.header-actions{gap:5px}.install-button{padding:10px 8px;font-size:10px}.header .cart-button{padding:9px 7px;font-size:10px}.cart-button>span{margin-right:3px}.cart-button b{margin-left:3px}.campaign-section{padding:45px 5% 30px}.campaign-heading h2{font-size:34px}.campaign-carousel{padding:12px}.campaign-slide{height:420px;max-height:105vw}}
+.campaign-open{display:flex;align-items:center;justify-content:center;max-width:100%;height:100%;padding:0;border:0;background:transparent}
+.campaign-open img{height:100%;width:100%;object-fit:contain}
+.campaign-open:focus-visible{outline:3px solid #204c33;outline-offset:3px}
+#campaign-dialog{width:min(520px,calc(100% - 32px));max-height:calc(100% - 32px);border:0;border-radius:10px;padding:0;color:#193e2c;box-shadow:0 12px 45px #14291c55}
+#campaign-dialog::backdrop{background:#14291c99}
+.campaign-dialog-content{position:relative;padding:28px}
+.campaign-dialog-content h2{font:28px Georgia,serif;padding-right:25px}
+.campaign-close{position:absolute;right:20px;top:15px}
+.campaign-detail{font-size:13px;line-height:1.6;border-bottom:1px solid #edf1ea;padding-bottom:12px}
+.campaign-total{font-weight:700;font-size:17px}
+.campaign-remove{align-self:start;border:1px solid #d5e0d1;background:white;color:#315b3c;border-radius:5px;padding:8px;font-size:11px}
+.submit-button:disabled{opacity:.5;cursor:not-allowed}

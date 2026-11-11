@@ -2,12 +2,77 @@
 
 const $ = (id) => document.getElementById(id);
 const money = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const apiBase = window.ECOFITUS_API_BASE.replace(/\/$/, '');
+function api(path) {
+  if (!apiBase && location.hostname.endsWith('.github.io')) {
+    throw new Error('Backend ainda não configurado. Entre em contato com a equipe comercial.');
+  }
+  return `${apiBase}${path}`;
+}
 let catalog = [];
 let updatedAt = 0;
 let stale = true;
 let loading = true;
 let orderVersion = 0;
+let orderId = crypto.randomUUID();
+let verifiedCnpj = '';
+let lookupVersion = 0;
+let lookupTimer;
+let lookupPromise;
 const cart = new Map();
+const selectedCampaigns = new Set();
+let activeCampaign;
+
+function reservedQuantity(id) {
+  let total = cart.get(id) || 0;
+  for (const campaignId of selectedCampaigns) {
+    try {
+      const campaign = window.EcofitusCampaigns.getCampaign(campaignId, catalog);
+      for (const line of campaign.lines) {
+        if (line.product.id === id) total += line.quantity + line.bonus;
+      }
+    } catch (error) {
+      console.error('Campanha indisponível no catálogo:', error.message);
+    }
+  }
+  return total;
+}
+
+function campaignAvailability(campaign) {
+  if (stale) return 'O catálogo está indisponível ou desatualizado.';
+  if (selectedCampaigns.has(campaign.id)) return 'Esta campanha já está no carrinho.';
+  for (const line of campaign.lines) {
+    if (reservedQuantity(line.product.id) + line.quantity + line.bonus > line.product.stock) {
+      return `Estoque insuficiente para ${line.product.name}, considerando os itens do carrinho.`;
+    }
+  }
+  return '';
+}
+
+function renderCampaignDialog() {
+  const details = $('campaign-details');
+  details.replaceChildren();
+  $('campaign-message').hidden = true;
+  $('campaign-add').disabled = true;
+  const config = window.EcofitusCampaigns.campaigns.find((entry) => entry.id === activeCampaign);
+  $('campaign-dialog-title').textContent = config.title;
+  try {
+    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog);
+    for (const line of campaign.lines) {
+      details.append(element('p', 'campaign-detail', `${line.product.name}: ${line.quantity} × ${money(line.priceCents)} = ${money(line.quantity * line.priceCents)}${line.bonus ? ` + ${line.bonus} unidades bonificadas` : ''}`));
+    }
+    details.append(element('p', 'campaign-total', `Total do exemplo: ${money(campaign.totalCents)}`));
+    details.append(element('p', 'form-note', `Benefício solicitado: ${campaign.benefit}${campaign.id === 'b12-pix' || campaign.id === 'q10-b12' ? ' O valor do Pix não é descontado do total do pedido.' : ''}`));
+    const unavailable = campaignAvailability(campaign);
+    if (unavailable) {
+      $('campaign-message').textContent = unavailable;
+      $('campaign-message').hidden = false;
+    } else $('campaign-add').disabled = false;
+  } catch (error) {
+    $('campaign-message').textContent = error.message;
+    $('campaign-message').hidden = false;
+  }
+}
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -18,6 +83,7 @@ function element(tag, className, text) {
 
 function invalidateOrder() {
   orderVersion++;
+  orderId = crypto.randomUUID();
   $('whatsapp-link').hidden = true;
   $('whatsapp-link').removeAttribute('href');
 }
@@ -33,7 +99,7 @@ function setCartOpen(open) {
 
 function addProduct(product) {
   const current = cart.get(product.id) || 0;
-  if (current + product.multiple > product.stock) {
+  if (stale || reservedQuantity(product.id) + product.multiple > product.stock) {
     $('catalog-error').textContent = 'A quantidade selecionada ultrapassa o estoque disponível.';
     $('catalog-error').hidden = false;
     return;
@@ -112,24 +178,49 @@ function renderCart() {
     });
     const plus = element('button', '', '+');
     plus.type = 'button';
-    plus.disabled = !product || quantity + product.multiple > product.stock || stale;
+    plus.disabled = !product || reservedQuantity(id) + product.multiple > product.stock || stale;
     plus.setAttribute('aria-label', `Aumentar quantidade de ${product ? product.name : 'produto'}`);
     plus.addEventListener('click', () => addProduct(product));
     controls.append(minus, element('span', '', String(quantity)), plus);
     item.append(details, controls);
     $('cart-items').append(item);
   }
+  let campaignInvalid = false;
+  for (const id of selectedCampaigns) {
+    const item = element('div', 'cart-item');
+    const details = element('div');
+    try {
+      const campaign = window.EcofitusCampaigns.getCampaign(id, catalog);
+      details.append(element('div', 'cart-item-name', `Campanha: ${campaign.title}`));
+      for (const line of campaign.lines) {
+        count += line.quantity + line.bonus;
+        details.append(element('span', 'cart-item-price', `${line.product.name}: ${line.quantity} × ${money(line.priceCents)}${line.bonus ? ` + ${line.bonus} bonificadas` : ''}`));
+        if (reservedQuantity(line.product.id) > line.product.stock) campaignInvalid = true;
+      }
+      total += campaign.totalCents;
+      details.append(element('span', 'cart-item-price', `${campaign.benefit} Subtotal: ${money(campaign.totalCents)}`));
+    } catch (error) {
+      campaignInvalid = true;
+      details.append(element('div', 'form-error', `Campanha indisponível: ${error.message}`));
+    }
+    const remove = element('button', 'campaign-remove', 'Remover');
+    remove.type = 'button';
+    remove.addEventListener('click', () => { selectedCampaigns.delete(id); invalidateOrder(); renderCart(); });
+    item.append(details, remove);
+    $('cart-items').append(item);
+  }
+  if (campaignInvalid) $('cart-items').append(element('p', 'form-error', 'Uma campanha está indisponível ou excede o estoque. Remova-a para continuar.'));
   $('cart-count').textContent = String(count);
-  $('cart-empty').hidden = cart.size > 0;
+  $('cart-empty').hidden = cart.size > 0 || selectedCampaigns.size > 0;
   $('cart-total').textContent = money(total);
   $('progress-bar').style.width = `${Math.min(100, total / 5000 * 100)}%`;
   $('minimum-text').textContent = total >= 5000 ? 'Pedido mínimo atingido ✓' : `Faltam ${money(5000 - total)} para o pedido mínimo.`;
-  $('submit-order').disabled = stale || !cart.size || total < 5000;
+  $('submit-order').disabled = stale || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
 }
 
 async function loadCatalog() {
   try {
-    const response = await fetch('/api/catalog', { cache: 'no-store' });
+    const response = await fetch(api('/api/catalog'), { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o catálogo.');
     const data = await response.json();
     if (!Array.isArray(data.products)) throw new Error('Resposta do catálogo inválida.');
@@ -146,6 +237,7 @@ async function loadCatalog() {
     if (stale) invalidateOrder();
     renderProducts();
     renderCart();
+    if ($('campaign-dialog').open) renderCampaignDialog();
   } catch (error) {
     loading = false;
     stale = true;
@@ -155,6 +247,7 @@ async function loadCatalog() {
     $('catalog-error').hidden = false;
     renderProducts();
     renderCart();
+    if ($('campaign-dialog').open) renderCampaignDialog();
   }
 }
 
@@ -166,31 +259,103 @@ document.addEventListener('keydown', (event) => {
 });
 $('search').addEventListener('input', renderProducts);
 $('sort').addEventListener('change', renderProducts);
+document.querySelectorAll('.campaign-open').forEach((button) => {
+  button.addEventListener('click', () => {
+    activeCampaign = button.dataset.campaign;
+    renderCampaignDialog();
+    $('campaign-dialog').showModal();
+  });
+});
+$('campaign-close').addEventListener('click', () => $('campaign-dialog').close());
+$('campaign-dialog').addEventListener('click', (event) => {
+  if (event.target === $('campaign-dialog')) $('campaign-dialog').close();
+});
+$('campaign-add').addEventListener('click', () => {
+  try {
+    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog);
+    const unavailable = campaignAvailability(campaign);
+    if (unavailable) throw new Error(unavailable);
+    selectedCampaigns.add(activeCampaign);
+    invalidateOrder();
+    renderCart();
+    $('campaign-dialog').close();
+    setCartOpen(true);
+  } catch (error) {
+    $('campaign-message').textContent = error.message;
+    $('campaign-message').hidden = false;
+  }
+});
 $('order-form').addEventListener('input', invalidateOrder);
 $('cnpj').addEventListener('input', (event) => {
+  lookupVersion++;
+  clearTimeout(lookupTimer);
+  lookupPromise = null;
+  verifiedCnpj = '';
   const digits = event.target.value.replace(/\D/g, '').slice(0, 14);
   event.target.value = digits.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+  $('company-status').textContent = digits.length === 14
+    ? 'Aguardando consulta da razão social...'
+    : 'A razão social será consultada automaticamente ao preencher o CNPJ.';
+  if (digits.length === 14) {
+    const version = lookupVersion;
+    lookupTimer = setTimeout(() => lookupCompany(digits, version), 400);
+  }
 });
+function lookupCompany(cnpj, version) {
+  if (lookupPromise) return lookupPromise;
+  $('company-status').textContent = 'Consultando razão social...';
+  const request = (async () => {
+    try {
+      const response = await fetch(api('/api/company'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Não foi possível consultar o CNPJ.');
+      if (version !== lookupVersion) return false;
+      verifiedCnpj = result.cnpj;
+      $('company-status').textContent = `Razão social: ${result.name} (BrasilAPI)`;
+      return true;
+    } catch (error) {
+      if (version === lookupVersion) $('company-status').textContent = `${error.message} Tente preparar o pedido para consultar novamente.`;
+      return false;
+    }
+  })();
+  lookupPromise = request;
+  request.finally(() => {
+    if (lookupPromise === request) lookupPromise = null;
+  });
+  return request;
+}
 $('order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  invalidateOrder();
-  const submittedVersion = orderVersion;
+  $('whatsapp-link').hidden = true;
   $('order-error').hidden = true;
+  const submittedVersion = orderVersion;
   $('submit-order').disabled = true;
   try {
-    const response = await fetch('/api/order', {
+    const cnpj = $('cnpj').value.replace(/\D/g, '');
+    if (verifiedCnpj !== cnpj) {
+      if (cnpj.length !== 14) throw new Error('Informe um CNPJ completo.');
+      clearTimeout(lookupTimer);
+      if (!await lookupCompany(cnpj, lookupVersion)) throw new Error('Não foi possível confirmar a razão social. Verifique a mensagem abaixo do CNPJ.');
+      if (submittedVersion !== orderVersion) throw new Error('Os dados foram alterados. Prepare o pedido novamente.');
+    }
+    const response = await fetch(api('/api/order'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        id: orderId,
         cnpj: $('cnpj').value,
         terms: $('terms').value,
         items: Array.from(cart, ([id, quantity]) => ({ id, quantity })),
+        campaigns: Array.from(selectedCampaigns),
       }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Não foi possível preparar o pedido.');
     if (submittedVersion !== orderVersion) {
-      throw new Error('O pedido foi alterado. Prepare-o novamente.');
+      throw new Error('O pedido anterior foi salvo no histórico, mas os dados foram alterados. Prepare o pedido atualizado novamente.');
     }
     $('whatsapp-link').href = result.url;
     $('whatsapp-link').hidden = false;

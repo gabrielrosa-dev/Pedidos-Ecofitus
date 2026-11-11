@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "Ecofitus - Catálogo e Pedidos",
+  "short_name": "Ecofitus",
+  "description": "Catálogo de produtos e pedidos Ecofitus.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafbf8",
+  "theme_color": "#183c2b",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

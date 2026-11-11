@@ -5,29 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#183c2b">
   <meta name="description" content="Conheça os produtos Ecofitus e envie seu pedido pelo WhatsApp.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ecofitus">
   <title>Ecofitus | Catálogo de produtos</title>
-  <link rel="stylesheet" href="/styles.css">
-  <script src="/app.js" defer></script>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./extra.css">
+  <script src="./config.js" defer></script>
+  <script src="./campaigns.js" defer></script>
+  <script src="./experience.js" defer></script>
+  <script src="./app.js" defer></script>
 </head>
 <body>
   <div class="topline">CUIDADO QUE VEM DA NATUREZA <span>✦</span> PEDIDO MÍNIMO DE R$ 50,00</div>
   <header class="header">
-    <a class="brand" href="/" aria-label="Ecofitus, início"><span class="brand-mark">e<span>✳</span></span><span>eco<span>fitus</span><small>CATÁLOGO DE PRODUTOS</small></span></a>
+    <a class="brand" href="./" aria-label="Ecofitus, início"><span class="brand-mark">e<span>✳</span></span><span>eco<span>fitus</span><small>CATÁLOGO DE PRODUTOS</small></span></a>
     <nav><a href="#produtos">Produtos</a><a href="#como-funciona">Como comprar</a></nav>
-    <button class="cart-button" id="open-cart" type="button"><span aria-hidden="true">▢</span> Meu pedido <b id="cart-count">0</b></button>
+    <div class="header-actions"><button class="install-button" id="install-app" type="button">Instalar aplicativo</button><button class="cart-button" id="open-cart" type="button"><span aria-hidden="true">▢</span> Meu pedido <b id="cart-count">0</b></button></div>
   </header>
+  <p id="install-status" class="install-status" role="status" hidden></p>
   <main>
-    <section class="hero">
-      <div class="hero-content">
-        <p class="eyebrow"><span>✳</span> BEM-VINDO AO CATÁLOGO ECOFITUS</p>
-        <h1>Mais cuidado,<br><em>mais natureza.</em></h1>
-        <p class="hero-copy">Produtos que fazem bem, em um só lugar. Encontre seus favoritos e faça seu pedido de um jeito simples.</p>
-        <a class="hero-button" href="#produtos">Explorar produtos <span>↗</span></a>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="art-circle"></div><div class="art-leaf leaf-one">✳</div><div class="art-leaf leaf-two">✳</div>
-        <div class="art-card"><span>ESSENCIALMENTE</span><strong>natural.</strong><small>PARA CUIDAR DE VOCÊ</small></div>
-        <div class="art-badge">BEM-ESTAR<br><strong>todos os dias</strong> ✳</div>
+    <section class="campaign-section" aria-labelledby="campaign-title">
+      <div class="campaign-heading"><div><p class="eyebrow">NOVIDADES PARA VOCÊ</p><h2 id="campaign-title">Campanhas<span>.</span></h2><p>Confira nossas campanhas e oportunidades.</p></div></div>
+      <div class="campaign-carousel" id="campaign-carousel" role="region" aria-roledescription="carrossel" aria-label="Campanhas Ecofitus">
+        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="1 de 5: B12, 1.000 no Pix"><button type="button" class="campaign-open" data-campaign="b12-pix" aria-label="Ver exemplo da campanha B12, 1.000 no Pix"><img src="./images/campaigns/b12-pix.jpeg" alt="Campanha B12, 1.000 no Pix"></button></div>
+        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="2 de 5: Barril de Chopp" hidden><button type="button" class="campaign-open" data-campaign="barril-chopp" aria-label="Ver exemplo da campanha Barril de Chopp"><img src="./images/campaigns/barril-chopp.jpeg" alt="Campanha Barril de Chopp" loading="lazy"></button></div>
+        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="3 de 5: Q10, B12 e Galinha Pintadinha" hidden><button type="button" class="campaign-open" data-campaign="q10-b12" aria-label="Ver exemplo da campanha Q10, B12 e Galinha Pintadinha"><img src="./images/campaigns/q10-b12.jpeg" alt="Campanha Q10, B12 e Galinha Pintadinha" loading="lazy"></button></div>
+        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="4 de 5: Regulax" hidden><button type="button" class="campaign-open" data-campaign="regulax" aria-label="Ver exemplo da campanha Regulax"><img src="./images/campaigns/regulax.jpeg" alt="Campanha Regulax" loading="lazy"></button></div>
+        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="5 de 5: Show de brindes" hidden><button type="button" class="campaign-open" data-campaign="show-brindes" aria-label="Ver exemplo da campanha Show de brindes"><img src="./images/campaigns/show-brindes.jpeg" alt="Campanha Show de brindes" loading="lazy"></button></div>
+        <div class="campaign-controls">
+          <button type="button" id="campaign-previous" aria-label="Campanha anterior">←</button>
+          <span id="campaign-position" aria-live="polite">1 / 5</span>
+          <button type="button" id="campaign-next" aria-label="Próxima campanha">→</button>
+        </div>
       </div>
     </section>
     <section class="benefits" id="como-funciona">
@@ -51,6 +62,16 @@
     </section>
   </main>
   <footer><div class="footer-brand">eco<span>fitus</span><small>Mais natureza no seu dia.</small></div><p>Catálogo de produtos · Pedidos sujeitos à confirmação comercial.</p><a href="#produtos">Voltar ao catálogo ↑</a></footer>
+  <dialog id="campaign-dialog" aria-labelledby="campaign-dialog-title">
+    <div class="campaign-dialog-content">
+      <button type="button" id="campaign-close" class="close campaign-close" aria-label="Fechar exemplo">×</button>
+      <p class="eyebrow">EXEMPLO DE PEDIDO</p>
+      <h2 id="campaign-dialog-title"></h2>
+      <div id="campaign-details"></div>
+      <p id="campaign-message" class="form-error" role="status" hidden></p>
+      <button type="button" id="campaign-add" class="submit-button">Adicionar ao carrinho <span>↗</span></button>
+    </div>
+  </dialog>
   <div class="overlay" id="overlay" hidden></div>
   <aside class="cart" id="cart" aria-label="Meu pedido" aria-hidden="true">
     <div class="cart-header"><div><p class="eyebrow">SELEÇÃO ESPECIAL</p><h2>Meu pedido<span>.</span></h2></div><button class="close" id="close-cart" type="button" aria-label="Fechar pedido">×</button></div>
@@ -61,13 +82,14 @@
       <div class="total-row"><span>Total dos produtos</span><strong id="cart-total">R$ 0,00</strong></div>
       <div class="minimum"><div class="progress"><div id="progress-bar"></div></div><p id="minimum-text">Pedido mínimo de R$ 50,00</p></div>
       <form id="order-form">
-        <label>CNPJ do comprador<input id="cnpj" name="cnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" required maxlength="18"></label>
+        <label>CNPJ do comprador<input id="cnpj" name="cnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" required maxlength="18" aria-describedby="company-status"></label>
+        <p id="company-status" class="form-note" role="status">A razão social será consultada automaticamente ao preencher o CNPJ.</p>
         <label>Prazo liberado<input id="terms" name="terms" placeholder="Ex.: 28 dias" required minlength="2" maxlength="100"></label>
         <p class="form-note">O prazo informado será conferido pela equipe comercial. Preços e disponibilidade também estão sujeitos à confirmação.</p>
         <button class="submit-button" type="submit" id="submit-order">Preparar pedido <span>↗</span></button>
         <p class="form-error" id="order-error" role="alert" hidden></p>
         <a class="whatsapp-link" id="whatsapp-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Enviar pedido pelo WhatsApp ↗</a>
-        <p class="privacy-note">Ao enviar, o CNPJ, prazo e itens serão compartilhados pelo WhatsApp com nossa equipe.</p>
+        <p class="privacy-note">O CNPJ será consultado na BrasilAPI. Ao preparar, os dados serão salvos para a equipe comercial; ao enviar, também serão compartilhados pelo WhatsApp.</p>
       </form>
     </div>
   </aside>
