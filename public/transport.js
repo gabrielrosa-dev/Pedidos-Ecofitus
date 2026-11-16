@@ -36,6 +36,7 @@ window.ecofitusRequest = function (path, body) {
         else finish(null, result.data);
       };
       script.onerror = () => finish(new Error('Não foi possível acessar o serviço do catálogo.'));
+      script.crossOrigin = 'anonymous';
       script.src = `${scriptUrl}?callback=${callback}`;
       document.head.append(script);
     });
