@@ -6,7 +6,9 @@ let catalog = [];
 let updatedAt = 0;
 let stale = true;
 let loading = true;
-let catalogRequestInFlight = false;
+let catalogRequestInFlight = null;
+let catalogViewKey = '';
+let submitting = false;
 let orderVersion = 0;
 let orderId = crypto.randomUUID();
 let verifiedCnpj = '';
@@ -22,7 +24,7 @@ function reservedQuantity(id) {
   let total = cart.get(id) || 0;
   for (const campaignId of selectedCampaigns) {
     try {
-      const campaign = window.EcofitusCampaigns.getCampaign(campaignId, catalog);
+      const campaign = window.EcofitusCampaigns.getCampaign(campaignId, catalog, updatedAt);
       for (const line of campaign.lines) {
         if (line.product.id === id) total += line.quantity + line.bonus;
       }
@@ -52,7 +54,7 @@ function renderCampaignDialog() {
   const config = window.EcofitusCampaigns.campaigns.find((entry) => entry.id === activeCampaign);
   $('campaign-dialog-title').textContent = config.title;
   try {
-    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog);
+    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog, updatedAt);
     for (const line of campaign.lines) {
       details.append(element('p', 'campaign-detail', `${line.product.name}: ${line.quantity} × ${money(line.priceCents)} = ${money(line.quantity * line.priceCents)}${line.bonus ? ` + ${line.bonus} unidades bonificadas` : ''}`));
     }
@@ -120,12 +122,15 @@ function changeProductQuantity(product, next) {
 
 function updateProductSummary(product, controls) {
   const quantity = cart.get(product.id) || 0;
+  const price = window.EcofitusPricing.unitPrice(product, quantity || product.multiple, updatedAt);
   controls.summary.hidden = quantity === 0;
   controls.add.hidden = quantity > 0;
   controls.add.disabled = stale || reservedQuantity(product.id) + product.multiple > product.stock;
   controls.plus.disabled = controls.add.disabled;
   controls.input.value = String(quantity);
-  controls.text.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * product.priceCents)}` : '';
+  controls.price.textContent = money(price.priceCents);
+  controls.priceLabel.textContent = `${price.promotional ? 'Promoção · ' : ''}${price.taxesConfirmed ? 'Preço unitário c/ impostos' : 'Impostos não confirmados'}`;
+  controls.text.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * price.priceCents)}` : '';
 }
 
 function renderProducts() {
@@ -135,8 +140,9 @@ function renderProducts() {
     normalize(`${p.name} ${p.id} ${p.ean} ${p.maker}`).includes(query) &&
     (!$('available-only').checked || p.stock >= p.multiple));
   if ($('sort').value === 'name') visible.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-  if ($('sort').value === 'price-low') visible.sort((a, b) => a.priceCents - b.priceCents);
-  if ($('sort').value === 'price-high') visible.sort((a, b) => b.priceCents - a.priceCents);
+  const initialPrice = (product) => window.EcofitusPricing.unitPrice(product, product.multiple, updatedAt).priceCents;
+  if ($('sort').value === 'price-low') visible.sort((a, b) => initialPrice(a) - initialPrice(b));
+  if ($('sort').value === 'price-high') visible.sort((a, b) => initialPrice(b) - initialPrice(a));
   $('products').replaceChildren();
   productSummaries.clear();
   $('result-count').textContent = loading ? 'Carregando produtos...' : `${visible.length} ${visible.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`;
@@ -161,12 +167,13 @@ function renderProducts() {
     if (product.multiple > 1) info.append(element('p', 'product-multiple', `Venda em múltiplos de ${product.multiple}`));
     const bottom = element('div', 'product-bottom');
     const price = element('div');
-    price.append(element('span', 'price-label', product.taxesConfirmed ? 'Preço unitário c/ impostos' : 'Impostos não confirmados'), element('span', 'price', money(product.priceCents)));
+    const priceLabel = element('span', 'price-label');
+    const priceValue = element('span', 'price');
+    price.append(priceLabel, priceValue);
     const button = element('button', 'add-button', '+');
     button.type = 'button';
     button.disabled = !available || stale;
     button.setAttribute('aria-label', `Adicionar ${product.name} ao pedido`);
-    button.addEventListener('click', () => addProduct(product));
     bottom.append(price, button);
     const summary = element('div', 'product-summary');
     const text = element('span', 'product-summary-text');
@@ -191,7 +198,8 @@ function renderProducts() {
       if (quantityError.textContent) input.value = String(cart.get(product.id) || 0);
     };
     button.addEventListener('click', () => {
-      if (cart.has(product.id)) input.focus();
+      addProduct(product);
+      if (cart.has(product.id)) minus.focus();
     });
     minus.addEventListener('click', () => {
       applyQuantity(Math.max(0, (cart.get(product.id) || 0) - product.multiple));
@@ -201,7 +209,7 @@ function renderProducts() {
     input.addEventListener('change', () => applyQuantity(input.valueAsNumber));
     quantityControls.append(minus, input, plus);
     summary.append(text, quantityControls, quantityError);
-    const controls = { product, summary, text, input, add: button, plus };
+    const controls = { product, summary, text, input, add: button, plus, price: priceValue, priceLabel };
     updateProductSummary(product, controls);
     productSummaries.set(product.id, controls);
     info.append(bottom, summary);
@@ -223,8 +231,9 @@ function renderCart() {
     const details = element('div');
     details.append(element('div', 'cart-item-name', product ? product.name : 'Produto não disponível'));
     if (product) {
-      total += product.priceCents * quantity;
-      details.append(element('span', 'cart-item-price', `${money(product.priceCents)} / un.${product.multiple > 1 ? ` · múltiplo de ${product.multiple}` : ''}`));
+      const price = window.EcofitusPricing.unitPrice(product, quantity, updatedAt);
+      total += price.priceCents * quantity;
+      details.append(element('span', 'cart-item-price', `${price.promotional ? 'Promoção · ' : ''}${money(price.priceCents)} / un.${product.multiple > 1 ? ` · múltiplo de ${product.multiple}` : ''}`));
       if (reservedQuantity(id) > product.stock || quantity % product.multiple !== 0) {
         productInvalid = true;
         details.append(element('span', 'form-error', 'Quantidade indisponível. Ajuste ou remova.'));
@@ -275,7 +284,7 @@ function renderCart() {
     const item = element('div', 'cart-item');
     const details = element('div');
     try {
-      const campaign = window.EcofitusCampaigns.getCampaign(id, catalog);
+      const campaign = window.EcofitusCampaigns.getCampaign(id, catalog, updatedAt);
       details.append(element('div', 'cart-item-name', `Campanha: ${campaign.title}`));
       for (const line of campaign.lines) {
         count += line.quantity + line.bonus;
@@ -300,19 +309,44 @@ function renderCart() {
   $('cart-total').textContent = money(total);
   $('progress-bar').style.width = `${Math.min(100, total / 5000 * 100)}%`;
   $('minimum-text').textContent = total >= 5000 ? 'Pedido mínimo atingido ✓' : `Faltam ${money(5000 - total)} para o pedido mínimo.`;
-  $('submit-order').disabled = stale || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
+  $('submit-order').disabled = submitting || stale || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
   for (const controls of productSummaries.values()) updateProductSummary(controls.product, controls);
 }
 
 async function loadCatalog() {
-  if (catalogRequestInFlight) return;
-  catalogRequestInFlight = true;
+  if (catalogRequestInFlight) return catalogRequestInFlight;
+  catalogRequestInFlight = fetchCatalog();
+  try {
+    await catalogRequestInFlight;
+  } finally {
+    catalogRequestInFlight = null;
+  }
+}
+
+async function fetchCatalog() {
   try {
     const data = await window.ecofitusRequest('/api/catalog');
-    if (!Array.isArray(data.products)) throw new Error('Resposta do catálogo inválida.');
-    const refreshCart = loading || updatedAt !== data.updatedAt || stale !== data.stale;
-    if (updatedAt && data.updatedAt !== updatedAt) invalidateOrder();
+    if (!Array.isArray(data.products) || !Number.isFinite(data.updatedAt) || typeof data.stale !== 'boolean' ||
+        !data.products.every((product) => product && typeof product.id === 'string' &&
+          typeof product.name === 'string' && typeof product.ean === 'string' && typeof product.maker === 'string' &&
+          Number.isSafeInteger(product.priceCents) && product.priceCents > 0 &&
+          Number.isSafeInteger(product.stock) && product.stock >= 0 &&
+          Number.isSafeInteger(product.multiple) && product.multiple > 0 &&
+          Array.isArray(product.promotions) && product.promotions.every((sale) => sale &&
+            Number.isSafeInteger(sale.priceCents) && sale.priceCents > 0 &&
+            typeof sale.taxesConfirmed === 'boolean' && Number.isSafeInteger(sale.begin) &&
+            Number.isSafeInteger(sale.end) && sale.end > sale.begin &&
+            Number.isSafeInteger(sale.minQuantity) && sale.minQuantity > 0 &&
+            Number.isSafeInteger(sale.maxQuantity) && sale.maxQuantity >= sale.minQuantity))) {
+      throw new Error('Serviço de preços desatualizado. Entre em contato com a equipe comercial.');
+    }
+    const nextViewKey = JSON.stringify(data.products.map((product) => [
+      product, product.promotions.map((sale) => data.updatedAt >= sale.begin && data.updatedAt < sale.end),
+    ]));
+    const refreshCart = loading || catalogViewKey !== nextViewKey || stale !== data.stale;
+    if (updatedAt && catalogViewKey !== nextViewKey) invalidateOrder();
     catalog = data.products;
+    catalogViewKey = nextViewKey;
     updatedAt = data.updatedAt;
     stale = data.stale;
     loading = false;
@@ -339,8 +373,6 @@ async function loadCatalog() {
     renderProducts();
     renderCart();
     if ($('campaign-dialog').open) renderCampaignDialog();
-  } finally {
-    catalogRequestInFlight = false;
   }
 }
 
@@ -367,7 +399,7 @@ $('campaign-dialog').addEventListener('click', (event) => {
 });
 $('campaign-add').addEventListener('click', () => {
   try {
-    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog);
+    const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog, updatedAt);
     const unavailable = campaignAvailability(campaign);
     if (unavailable) throw new Error(unavailable);
     selectedCampaigns.add(activeCampaign);
@@ -419,9 +451,12 @@ function lookupCompany(cnpj, version) {
 }
 $('order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (submitting) return;
+  submitting = true;
   $('whatsapp-link').hidden = true;
   $('order-error').hidden = true;
   const submittedVersion = orderVersion;
+  let orderRequested = false;
   $('submit-order').disabled = true;
   try {
     const cnpj = $('cnpj').value.replace(/\D/g, '');
@@ -431,12 +466,26 @@ $('order-form').addEventListener('submit', async (event) => {
       if (!await lookupCompany(cnpj, lookupVersion)) throw new Error('Não foi possível confirmar a razão social. Verifique a mensagem abaixo do CNPJ.');
       if (submittedVersion !== orderVersion) throw new Error('Os dados foram alterados. Prepare o pedido novamente.');
     }
+    const products = new Map(catalog.map((product) => [product.id, product]));
+    const priceQuote = {
+      items: Array.from(cart, ([id, quantity]) => ({
+        id, priceCents: window.EcofitusPricing.unitPrice(products.get(id), quantity, updatedAt).priceCents,
+      })),
+      campaigns: Array.from(selectedCampaigns, (id) => ({
+        id,
+        items: window.EcofitusCampaigns.getCampaign(id, catalog, updatedAt).lines.map((line) => ({
+          id: line.product.id, priceCents: line.priceCents,
+        })),
+      })),
+    };
+    orderRequested = true;
     const result = await window.ecofitusRequest('/api/order', {
         id: orderId,
         cnpj: $('cnpj').value,
         terms: $('terms').value,
         items: Array.from(cart, ([id, quantity]) => ({ id, quantity })),
         campaigns: Array.from(selectedCampaigns),
+        priceQuote,
     });
     if (submittedVersion !== orderVersion) {
       throw new Error('O pedido anterior foi salvo no histórico, mas os dados foram alterados. Prepare o pedido atualizado novamente.');
@@ -445,9 +494,14 @@ $('order-form').addEventListener('submit', async (event) => {
     $('whatsapp-link').hidden = false;
     $('whatsapp-link').focus();
   } catch (error) {
+    if (orderRequested) {
+      if (catalogRequestInFlight) await catalogRequestInFlight;
+      await loadCatalog();
+    }
     $('order-error').textContent = error.message;
     $('order-error').hidden = false;
   } finally {
+    submitting = false;
     renderCart();
   }
 });
