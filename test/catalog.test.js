@@ -13,6 +13,14 @@ test('normaliza preço final, estoque e múltiplo', () => {
   assert.equal(products[0].multiple, 2);
   assert.throws(() => normalizeCatalog({ products: [{ ...raw.products[0], prices: [] }] }), /múltiplas tabelas/);
 });
+test('aceita imagens HTTPS e rejeita endereços inválidos', () => {
+  const product = { ...raw.products[0], hasImage: true, imageURL: 'https://example.com/produto.png' };
+  assert.equal(normalizeCatalog({ products: [product] })[0].image, product.imageURL);
+  assert.equal(normalizeCatalog({ products: [{ ...product, imageURL: 'http://example.com/produto.png' }] })[0].image, '');
+  for (const imageURL of ['https://', 'https://example.com\\@evil.com/image', 'https://example.com:99999/image']) {
+    assert.throws(() => normalizeCatalog({ products: [{ ...product, imageURL }] }), /Imagem inválida/);
+  }
+});
 test('valida CNPJ, incluindo dígitos verificadores', () => {
   assert.equal(validCnpj(order.cnpj), true);
   assert.equal(validCnpj('23.624.691/0001-09'), false);

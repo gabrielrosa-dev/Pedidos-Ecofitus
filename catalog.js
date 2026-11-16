@@ -22,12 +22,9 @@ function normalizeCatalog(raw) {
     }
     let image = '';
     if (product.hasImage && typeof product.imageURL === 'string') {
-      try {
-        const url = new URL(product.imageURL);
-        if (url.protocol === 'https:') image = url.href;
-      } catch {
-        throw new Error(`Imagem inválida para ${product.id}.`);
-      }
+      const match = /^(https?):\/\/([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::(\d{1,5}))?(?:[/?#][^\s\\]*)?$/i.exec(product.imageURL);
+      if (!match || (match[3] && Number(match[3]) > 65535)) throw new Error(`Imagem inválida para ${product.id}.`);
+      if (match[1].toLowerCase() === 'https') image = product.imageURL;
     }
     return {
       id: product.id,

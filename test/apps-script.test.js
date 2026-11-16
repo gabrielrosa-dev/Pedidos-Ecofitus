@@ -10,7 +10,7 @@ function fakeAppsScript() {
   const cache = new Map();
   const sheets = new Map();
   let catalogRequests = 0;
-  const product = { id: 'b12', ean: '7896920307922', name: 'B12', prices: [{ finalPrice: 24.54, quantityAvailable: 500, multiple: 1 }] };
+  const product = { id: 'b12', ean: '7896920307922', name: 'B12', hasImage: true, imageURL: 'https://example.com/product.png', prices: [{ finalPrice: 24.54, quantityAvailable: 500, multiple: 1 }] };
   const context = vm.createContext({
     console, Date, JSON, Number, String, Array, Math, Error, encodeURIComponent,
     CacheService: { getScriptCache: () => ({ get: (key) => cache.get(key), put: (key, value) => cache.set(key, value) }) },
@@ -47,6 +47,8 @@ test('Apps Script atualiza catálogo e salva pedido idempotente na planilha', ()
   const callback = 'ecofitusCallback_abcdef0123';
   const output = app.context.doGet({ parameter: { callback } }).text;
   assert.ok(output.startsWith(callback + '('));
+  assert.match(output, /https:\/\/example\.com\/product\.png/);
+  assert.match(output, /"ok":true/);
   assert.equal(app.getCatalogRequests(), 1);
   const expired = JSON.parse(app.cache.get('catalog'));
   expired.updatedAt = Date.now() - 300001;
@@ -66,4 +68,12 @@ test('Apps Script atualiza catálogo e salva pedido idempotente na planilha', ()
   assert.equal(JSON.parse(row[9]).campaigns[0].id, 'b12-pix');
   app.context.doPost(request);
   assert.equal(app.sheets.get('Pedidos').rows.length, 2);
+});
+
+test('verificação de configuração exige a aba de pedidos e consulta o catálogo', () => {
+  const app = fakeAppsScript();
+  assert.throws(() => app.context.checkSetup(), /Execute setup/);
+  app.context.setup();
+  app.context.checkSetup();
+  assert.equal(app.getCatalogRequests(), 1);
 });

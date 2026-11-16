@@ -32,3 +32,74 @@
 .campaign-total{font-weight:700;font-size:17px}
 .campaign-remove{align-self:start;border:1px solid #d5e0d1;background:white;color:#315b3c;border-radius:5px;padding:8px;font-size:11px}
 .submit-button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Loja */
+.shop{background:#f6f8f4;color:#173b2b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.shop .topline{height:32px;background:#163b2b;letter-spacing:1.2px}
+.shop .header{position:sticky;top:0;z-index:4;height:74px;padding:0 max(5%,calc((100% - 1280px)/2));border-bottom:1px solid #e3ebe2;background:#ffffffed;backdrop-filter:blur(12px)}
+.shop .header nav{gap:26px;color:#526c5a}
+.shop .header nav a:hover{color:#1d603f}
+.shop .cart-button{background:#1b4c35;color:#fff;border-color:#1b4c35;border-radius:10px;padding:11px 15px}
+.shop .cart-button b{background:#dcecd6;color:#204c33}
+.shop .install-button{background:transparent;border-radius:10px}
+.shop .campaign-section,.shop .catalog{max-width:1440px}
+.shop .campaign-section{padding:42px 6% 20px}
+.shop .campaign-heading h2,.shop .section-heading h2,.shop .cart h2{font-family:inherit;font-weight:750;letter-spacing:-1.5px}
+.shop .campaign-heading h2,.shop .section-heading h2{font-size:clamp(28px,3vw,38px);margin:8px 0}
+.shop .campaign-heading>div>p:last-child,.shop .section-heading>div>p:last-child{color:#637b69;font-size:14px}
+.shop .campaign-carousel{margin-top:20px;padding:16px;background:#e9f1e7;border:1px solid #dfeadd;border-radius:18px}
+.shop .campaign-slide{height:clamp(260px,35vw,420px)}
+.shop .campaign-slide img{border-radius:8px}
+.shop .campaign-controls{padding-top:12px}
+.shop .campaign-controls button{border-radius:8px}
+.shop .catalog{padding:44px 6% 90px}
+.shop .toolbar{align-items:stretch;gap:10px;margin-top:24px}
+.shop .search,.shop .sort-label,.availability-filter{border:1px solid #dce7dc;border-radius:10px;background:#fff}
+.shop .search:focus-within{border-color:#5d956b;box-shadow:0 0 0 3px #dcecdf}
+.shop .search input,.shop .sort-label select{font-size:14px}
+.availability-filter{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;color:#3b5c45;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+.availability-filter input{width:17px;height:17px;accent-color:#245d3c}
+.shop .results-line{font-size:12px;color:#667d6c}
+.shop .product-grid{gap:16px}
+.shop .product-card{border:1px solid #e0e9df;border-radius:14px}
+.shop .product-card:hover{box-shadow:0 12px 30px #24463114}
+.shop .product-image{height:200px;background:#f0f5ed}
+.shop .stock-tag{border-radius:6px;letter-spacing:.3px}
+.shop .product-info{padding:18px}
+.shop .product-name{font-size:14px;min-height:42px}
+.shop .product-code{margin-bottom:14px}
+.product-multiple{margin:-7px 0 14px;color:#54765c;font-size:11px}
+.shop .price{font-size:19px}
+.shop .add-button{width:42px;height:42px;border-radius:10px;background:#e1efdf}
+.shop .add-button:hover:not(:disabled){background:#204c33}
+.shop .cart{box-shadow:-12px 0 40px #163b2b1c}
+.shop .cart-header{padding:24px 26px;border-color:#e4ece3}
+.shop .cart h2{font-size:27px}
+.shop .cart-body{padding-top:18px}
+.shop .cart-item-name{font-size:13px}
+.shop .quantity{gap:5px;align-self:start}
+.shop .quantity button{width:32px;height:34px;border-radius:7px}
+.quantity-input{width:55px;height:34px;text-align:center;border:1px solid #d5e3d5;border-radius:7px;color:#173b2b;font-size:13px}
+.quantity-error{display:block;margin-top:5px}
+.item-remove{display:block;margin-top:8px;padding:0;border:0;background:none;color:#667e6b;text-decoration:underline;font-size:11px}
+.retry-button{display:block;margin:0 auto 20px;padding:10px 16px;border:1px solid #b8cfb9;border-radius:8px;background:#fff;color:#204c33;font-weight:700}
+.shop .submit-button,.shop .whatsapp-link{border-radius:10px;font-size:13px}
+.shop :focus-visible{outline:3px solid #76a783;outline-offset:3px}
+@media(max-width:650px){
+  .shop .header{height:66px;padding:0 5%}
+  .shop .campaign-section{padding:32px 5% 12px}
+  .shop .campaign-carousel{padding:10px;border-radius:14px}
+  .shop .campaign-slide{height:320px;max-height:90vw}
+  .shop .catalog{padding:36px 5% 65px}
+  .shop .toolbar{display:grid;grid-template-columns:1fr 1fr}
+  .shop .search{grid-column:1/-1}
+  .shop .sort-label{padding:0 10px}
+  .shop .sort-label select{font-size:12px;min-width:0}
+  .availability-filter{padding:10px;font-size:11px;white-space:normal}
+  .shop .product-grid{gap:10px}
+  .shop .product-image{height:145px}
+  .shop .product-info{padding:12px}
+  .shop .product-name{font-size:12px}
+  .shop .price{font-size:16px}
+  .shop .add-button{width:38px;height:38px}
+}

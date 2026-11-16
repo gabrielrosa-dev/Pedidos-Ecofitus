@@ -65,6 +65,13 @@ function setup() {
   }
 }
 
+function checkSetup() {
+  if (!/^[1-9]\d{9,14}$/.test(WHATSAPP)) throw new Error('Número de WhatsApp inválido.');
+  if (!spreadsheet_().getSheetByName('Pedidos')) throw new Error('Aba Pedidos não encontrada. Execute setup.');
+  const snapshot = catalog_();
+  console.log('Configuração básica verificada. Produtos no catálogo: ' + snapshot.products.length);
+}
+
 function catalog_() {
   const cache = CacheService.getScriptCache();
   const lock = LockService.getScriptLock();
@@ -81,7 +88,7 @@ function catalog_() {
     let pages = 1;
     const products = [];
     do {
-      const response = UrlFetchApp.fetch('https://ic.nexfar.com.br/api/catalog/2773/products', {
+      const response = UrlFetchApp.fetch('https://grupomtf.ic.nexfar.com.br/api/catalog/2773/products', {
         method: 'post',
         contentType: 'application/json',
         payload: JSON.stringify({ cnpj: '23624691000108', distributorId: 3, pagina: page }),

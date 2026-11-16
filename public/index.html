@@ -18,11 +18,11 @@
   <script src="./experience.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
-<body>
+<body class="shop">
   <div class="topline">CUIDADO QUE VEM DA NATUREZA <span>✦</span> PEDIDO MÍNIMO DE R$ 50,00</div>
   <header class="header">
     <a class="brand" href="./" aria-label="Ecofitus, início"><span class="brand-mark">e<span>✳</span></span><span>eco<span>fitus</span><small>CATÁLOGO DE PRODUTOS</small></span></a>
-    <nav><a href="#produtos">Produtos</a></nav>
+    <nav aria-label="Navegação principal"><a href="#produtos">Produtos</a><a href="#campaign-title">Campanhas</a></nav>
     <div class="header-actions"><button class="install-button" id="install-app" type="button">Instalar aplicativo</button><button class="cart-button" id="open-cart" type="button"><span aria-hidden="true">▢</span> Meu pedido <b id="cart-count">0</b></button></div>
   </header>
   <p id="install-status" class="install-status" role="status" hidden></p>
@@ -48,13 +48,15 @@
         <div class="catalog-meta"><span class="status-dot"></span><span id="sync-status" role="status">Conectando ao catálogo...</span></div>
       </div>
       <div class="toolbar">
-        <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Busque por nome ou código..." aria-label="Buscar produtos"></label>
+        <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Busque por nome, código ou marca..." aria-label="Buscar produtos"></label>
+        <label class="availability-filter"><input id="available-only" type="checkbox"> Apenas disponíveis</label>
         <label class="sort-label">Ordenar por <select id="sort" aria-label="Ordenar produtos"><option value="name">Nome A–Z</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option></select></label>
       </div>
       <div class="results-line"><span id="result-count">Carregando produtos...</span><span>Preços finais da tabela</span></div>
       <p class="notice" id="catalog-error" role="alert" hidden></p>
+      <button type="button" class="retry-button" id="retry-catalog" hidden>Tentar atualizar catálogo</button>
       <div class="product-grid" id="products"></div>
-      <p class="empty" id="empty" hidden>Nenhum produto encontrado. Tente outra busca.</p>
+      <p class="empty" id="empty" hidden>Nenhum produto encontrado. Tente outra busca ou ajuste os filtros.</p>
     </section>
   </main>
   <footer><div class="footer-brand">eco<span>fitus</span><small>Mais natureza no seu dia.</small></div><p>Catálogo de produtos · Pedidos sujeitos à confirmação comercial.</p><a href="#produtos">Voltar ao catálogo ↑</a></footer>
@@ -69,7 +71,7 @@
     </div>
   </dialog>
   <div class="overlay" id="overlay" hidden></div>
-  <aside class="cart" id="cart" aria-label="Meu pedido" aria-hidden="true">
+  <aside class="cart" id="cart" aria-label="Meu pedido" aria-hidden="true" inert>
     <div class="cart-header"><div><p class="eyebrow">SELEÇÃO ESPECIAL</p><h2>Meu pedido<span>.</span></h2></div><button class="close" id="close-cart" type="button" aria-label="Fechar pedido">×</button></div>
     <div class="cart-body">
       <p class="cart-intro">Confira seus produtos antes de enviar.</p>
