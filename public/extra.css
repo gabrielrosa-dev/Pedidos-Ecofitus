@@ -43,15 +43,24 @@
 .shop .cart-button b{background:#dcecd6;color:#204c33}
 .shop .install-button{background:transparent;border-radius:10px}
 .shop .campaign-section,.shop .catalog{max-width:1440px}
-.shop .campaign-section{padding:42px 6% 20px}
+.shop .campaign-section{max-width:1600px;padding:42px 2% 20px}
 .shop .campaign-heading h2,.shop .section-heading h2,.shop .cart h2{font-family:inherit;font-weight:750;letter-spacing:-1.5px}
 .shop .campaign-heading h2,.shop .section-heading h2{font-size:clamp(28px,3vw,38px);margin:8px 0}
 .shop .campaign-heading>div>p:last-child,.shop .section-heading>div>p:last-child{color:#637b69;font-size:14px}
 .shop .campaign-carousel{margin-top:20px;padding:16px;background:#e9f1e7;border:1px solid #dfeadd;border-radius:18px}
-.shop .campaign-slide{height:clamp(260px,35vw,420px)}
+.shop .campaign-slide{height:clamp(400px,60vw,620px);position:relative;isolation:isolate;overflow:hidden;border-radius:12px}
+.shop .campaign-slide::before{content:"";position:absolute;inset:-24px;z-index:-1;background-position:center;background-size:cover;filter:blur(20px) brightness(.65)}
+.shop .campaign-slide:nth-child(1)::before{background-image:url("./images/campaigns/b12-pix.jpeg")}
+.shop .campaign-slide:nth-child(2)::before{background-image:url("./images/campaigns/barril-chopp.jpeg")}
+.shop .campaign-slide:nth-child(3)::before{background-image:url("./images/campaigns/q10-b12.jpeg")}
+.shop .campaign-slide:nth-child(4)::before{background-image:url("./images/campaigns/regulax.jpeg")}
+.shop .campaign-slide:nth-child(5)::before{background-image:url("./images/campaigns/show-brindes.jpeg")}
 .shop .campaign-slide img{border-radius:8px}
-.shop .campaign-controls{padding-top:12px}
-.shop .campaign-controls button{border-radius:8px}
+.shop .campaign-controls{gap:0;padding-top:8px}
+.shop .campaign-controls .campaign-dot{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent}
+.shop .campaign-controls .campaign-dot::after{content:"";width:9px;height:9px;border-radius:50%;background:#a9bea9}
+.shop .campaign-controls .campaign-dot[aria-current="true"]::after{width:12px;height:12px;background:#1b4c35}
+.shop .campaign-controls .campaign-dot:hover{background:#dcebdd}
 .shop .catalog{padding:44px 6% 90px}
 .shop .toolbar{align-items:stretch;gap:10px;margin-top:24px}
 .shop .search,.shop .sort-label,.availability-filter{border:1px solid #dce7dc;border-radius:10px;background:#fff}
@@ -69,6 +78,7 @@
 .shop .product-name{font-size:14px;min-height:42px}
 .shop .product-code{margin-bottom:14px}
 .product-multiple{margin:-7px 0 14px;color:#54765c;font-size:11px}
+.product-summary{margin:14px 0 0;padding:10px;border-radius:8px;background:#f0f6ed;color:#315b3c;font-size:11px;font-weight:700;line-height:1.5}
 .shop .price{font-size:19px}
 .shop .add-button{width:42px;height:42px;border-radius:10px;background:#e1efdf}
 .shop .add-button:hover:not(:disabled){background:#204c33}
@@ -87,9 +97,9 @@
 .shop :focus-visible{outline:3px solid #76a783;outline-offset:3px}
 @media(max-width:650px){
   .shop .header{height:66px;padding:0 5%}
-  .shop .campaign-section{padding:32px 5% 12px}
+  .shop .campaign-section{padding:32px 2% 12px}
   .shop .campaign-carousel{padding:10px;border-radius:14px}
-  .shop .campaign-slide{height:320px;max-height:90vw}
+  .shop .campaign-slide{height:120vw;max-height:540px}
   .shop .catalog{padding:36px 5% 65px}
   .shop .toolbar{display:grid;grid-template-columns:1fr 1fr}
   .shop .search{grid-column:1/-1}

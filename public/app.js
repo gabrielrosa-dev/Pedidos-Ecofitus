@@ -14,6 +14,7 @@ let lookupVersion = 0;
 let lookupTimer;
 let lookupPromise;
 const cart = new Map();
+const productSummaries = new Map();
 const selectedCampaigns = new Set();
 let activeCampaign;
 
@@ -106,6 +107,12 @@ function addProduct(product) {
   renderCart();
 }
 
+function updateProductSummary(product, summary) {
+  const quantity = cart.get(product.id) || 0;
+  summary.hidden = quantity === 0;
+  summary.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * product.priceCents)}` : '';
+}
+
 function renderProducts() {
   const normalize = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
   const query = normalize($('search').value.trim());
@@ -116,6 +123,7 @@ function renderProducts() {
   if ($('sort').value === 'price-low') visible.sort((a, b) => a.priceCents - b.priceCents);
   if ($('sort').value === 'price-high') visible.sort((a, b) => b.priceCents - a.priceCents);
   $('products').replaceChildren();
+  productSummaries.clear();
   $('result-count').textContent = loading ? 'Carregando produtos...' : `${visible.length} ${visible.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`;
   $('empty').hidden = loading || stale || visible.length > 0;
   for (const product of visible) {
@@ -145,7 +153,11 @@ function renderProducts() {
     button.setAttribute('aria-label', `Adicionar ${product.name} ao pedido`);
     button.addEventListener('click', () => addProduct(product));
     bottom.append(price, button);
-    info.append(bottom);
+    const summary = element('p', 'product-summary');
+    summary.setAttribute('aria-live', 'polite');
+    updateProductSummary(product, summary);
+    productSummaries.set(product.id, { product, summary });
+    info.append(bottom, summary);
     card.append(imageBox, info);
     $('products').append(card);
   }
@@ -250,6 +262,7 @@ function renderCart() {
   $('progress-bar').style.width = `${Math.min(100, total / 5000 * 100)}%`;
   $('minimum-text').textContent = total >= 5000 ? 'Pedido mínimo atingido ✓' : `Faltam ${money(5000 - total)} para o pedido mínimo.`;
   $('submit-order').disabled = stale || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
+  for (const { product, summary } of productSummaries.values()) updateProductSummary(product, summary);
 }
 
 async function loadCatalog() {

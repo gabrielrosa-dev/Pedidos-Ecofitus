@@ -1,14 +1,17 @@
 'use strict';
 
 const slides = Array.from(document.querySelectorAll('.campaign-slide'));
-const position = document.getElementById('campaign-position');
+const dots = Array.from(document.querySelectorAll('.campaign-dot'));
 let slideIndex = 0;
 let timer;
 
 function showSlide(index) {
   slideIndex = (index + slides.length) % slides.length;
   slides.forEach((slide, i) => { slide.hidden = i !== slideIndex; });
-  position.textContent = `${slideIndex + 1} / ${slides.length}`;
+  dots.forEach((dot, i) => {
+    if (i === slideIndex) dot.setAttribute('aria-current', 'true');
+    else dot.removeAttribute('aria-current');
+  });
 }
 function setRotation() {
   clearInterval(timer);
@@ -18,8 +21,9 @@ function setRotation() {
     }, 6000);
   }
 }
-document.getElementById('campaign-previous').addEventListener('click', () => { showSlide(slideIndex - 1); setRotation(); });
-document.getElementById('campaign-next').addEventListener('click', () => { showSlide(slideIndex + 1); setRotation(); });
+dots.forEach((dot, index) => {
+  dot.addEventListener('click', () => { showSlide(index); setRotation(); });
+});
 setRotation();
 
 const installButton = document.getElementById('install-app');
