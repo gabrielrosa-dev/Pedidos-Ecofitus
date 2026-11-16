@@ -95,22 +95,37 @@ function setCartOpen(open) {
 
 function addProduct(product) {
   const current = cart.get(product.id) || 0;
-  if (stale || reservedQuantity(product.id) + product.multiple > product.stock) {
-    $('catalog-error').textContent = stale
-      ? 'Aguarde a atualização do catálogo para adicionar produtos.'
-      : 'A quantidade selecionada ultrapassa o estoque disponível.';
+  const error = changeProductQuantity(product, current + product.multiple);
+  if (error) {
+    $('catalog-error').textContent = error;
     $('catalog-error').hidden = false;
-    return;
   }
-  cart.set(product.id, current + product.multiple);
-  invalidateOrder();
-  renderCart();
 }
 
-function updateProductSummary(product, summary) {
+function changeProductQuantity(product, next) {
+  const current = cart.get(product.id) || 0;
+  if (!Number.isSafeInteger(next) || next < 0 || next % product.multiple !== 0) {
+    return `Informe zero ou um múltiplo de ${product.multiple}.`;
+  }
+  if (next > current && stale) return 'Aguarde a atualização do catálogo para aumentar a quantidade.';
+  if (next > current && reservedQuantity(product.id) - current + next > product.stock) {
+    return 'A quantidade selecionada ultrapassa o estoque disponível.';
+  }
+  if (next === current) return '';
+  if (next === 0) cart.delete(product.id); else cart.set(product.id, next);
+  invalidateOrder();
+  renderCart();
+  return '';
+}
+
+function updateProductSummary(product, controls) {
   const quantity = cart.get(product.id) || 0;
-  summary.hidden = quantity === 0;
-  summary.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * product.priceCents)}` : '';
+  controls.summary.hidden = quantity === 0;
+  controls.add.hidden = quantity > 0;
+  controls.add.disabled = stale || reservedQuantity(product.id) + product.multiple > product.stock;
+  controls.plus.disabled = controls.add.disabled;
+  controls.input.value = String(quantity);
+  controls.text.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * product.priceCents)}` : '';
 }
 
 function renderProducts() {
@@ -153,10 +168,42 @@ function renderProducts() {
     button.setAttribute('aria-label', `Adicionar ${product.name} ao pedido`);
     button.addEventListener('click', () => addProduct(product));
     bottom.append(price, button);
-    const summary = element('p', 'product-summary');
-    summary.setAttribute('aria-live', 'polite');
-    updateProductSummary(product, summary);
-    productSummaries.set(product.id, { product, summary });
+    const summary = element('div', 'product-summary');
+    const text = element('span', 'product-summary-text');
+    text.setAttribute('aria-live', 'polite');
+    const quantityControls = element('div', 'quantity product-quantity');
+    const minus = element('button', '', '−');
+    minus.type = 'button';
+    minus.setAttribute('aria-label', `Diminuir quantidade avulsa de ${product.name}`);
+    const input = element('input', 'quantity-input');
+    input.type = 'number';
+    input.inputMode = 'numeric';
+    input.min = '0';
+    input.step = String(product.multiple);
+    input.setAttribute('aria-label', `Quantidade avulsa de ${product.name}`);
+    const plus = element('button', '', '+');
+    plus.type = 'button';
+    plus.setAttribute('aria-label', `Aumentar quantidade avulsa de ${product.name}`);
+    const quantityError = element('span', 'form-error quantity-error');
+    quantityError.setAttribute('role', 'alert');
+    const applyQuantity = (next) => {
+      quantityError.textContent = changeProductQuantity(product, next);
+      if (quantityError.textContent) input.value = String(cart.get(product.id) || 0);
+    };
+    button.addEventListener('click', () => {
+      if (cart.has(product.id)) input.focus();
+    });
+    minus.addEventListener('click', () => {
+      applyQuantity(Math.max(0, (cart.get(product.id) || 0) - product.multiple));
+      if (!cart.has(product.id)) button.focus();
+    });
+    plus.addEventListener('click', () => applyQuantity((cart.get(product.id) || 0) + product.multiple));
+    input.addEventListener('change', () => applyQuantity(input.valueAsNumber));
+    quantityControls.append(minus, input, plus);
+    summary.append(text, quantityControls, quantityError);
+    const controls = { product, summary, text, input, add: button, plus };
+    updateProductSummary(product, controls);
+    productSummaries.set(product.id, controls);
     info.append(bottom, summary);
     card.append(imageBox, info);
     $('products').append(card);
@@ -201,26 +248,18 @@ function renderCart() {
     const quantityInput = element('input', 'quantity-input');
     quantityInput.type = 'number';
     quantityInput.inputMode = 'numeric';
-    quantityInput.min = product ? String(product.multiple) : '1';
+    quantityInput.min = '0';
     quantityInput.step = product ? String(product.multiple) : '1';
     quantityInput.value = String(quantity);
     quantityInput.setAttribute('aria-label', `Quantidade de ${product ? product.name : 'produto'}`);
     const quantityError = element('span', 'form-error quantity-error');
     quantityError.setAttribute('role', 'alert');
     quantityInput.addEventListener('change', () => {
-      const next = quantityInput.valueAsNumber;
-      const max = product ? product.stock - (reservedQuantity(id) - quantity) : 0;
-      if (!product || !Number.isSafeInteger(next) || next < 1 || next % product.multiple !== 0 ||
-          (next > quantity && (stale || next > max))) {
+      const error = product ? changeProductQuantity(product, quantityInput.valueAsNumber) : 'Remova este produto indisponível do pedido.';
+      if (error) {
         quantityInput.value = String(quantity);
-        quantityError.textContent = product
-          ? (stale && next > quantity ? 'Aguarde a atualização do catálogo para aumentar a quantidade.' : `Informe um múltiplo de ${product.multiple} dentro do estoque disponível.`)
-          : 'Remova este produto indisponível do pedido.';
-        return;
+        quantityError.textContent = error;
       }
-      cart.set(id, next);
-      invalidateOrder();
-      renderCart();
     });
     const remove = element('button', 'item-remove', 'Remover');
     remove.type = 'button';
@@ -262,7 +301,7 @@ function renderCart() {
   $('progress-bar').style.width = `${Math.min(100, total / 5000 * 100)}%`;
   $('minimum-text').textContent = total >= 5000 ? 'Pedido mínimo atingido ✓' : `Faltam ${money(5000 - total)} para o pedido mínimo.`;
   $('submit-order').disabled = stale || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
-  for (const { product, summary } of productSummaries.values()) updateProductSummary(product, summary);
+  for (const controls of productSummaries.values()) updateProductSummary(controls.product, controls);
 }
 
 async function loadCatalog() {
@@ -284,8 +323,10 @@ async function loadCatalog() {
       : (data.error || '');
     $('retry-catalog').hidden = !data.error && !stale;
     if (stale) invalidateOrder();
-    renderProducts();
-    if (refreshCart) renderCart();
+    if (refreshCart) {
+      renderProducts();
+      renderCart();
+    }
     if ($('campaign-dialog').open) renderCampaignDialog();
   } catch (error) {
     loading = false;

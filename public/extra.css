@@ -79,6 +79,9 @@
 .shop .product-code{margin-bottom:14px}
 .product-multiple{margin:-7px 0 14px;color:#54765c;font-size:11px}
 .product-summary{margin:14px 0 0;padding:10px;border-radius:8px;background:#f0f6ed;color:#315b3c;font-size:11px;font-weight:700;line-height:1.5}
+.product-summary-text{display:block}
+.shop .product-quantity{margin-top:8px;justify-content:center}
+.shop .product-quantity button:disabled{opacity:.45;cursor:not-allowed}
 .shop .price{font-size:19px}
 .shop .add-button{width:42px;height:42px;border-radius:10px;background:#e1efdf}
 .shop .add-button:hover:not(:disabled){background:#204c33}
