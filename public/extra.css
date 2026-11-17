@@ -32,13 +32,15 @@
 .campaign-total{font-weight:700;font-size:17px}
 .campaign-remove{align-self:start;border:1px solid #d5e0d1;background:white;color:#315b3c;border-radius:5px;padding:8px;font-size:11px}
 .submit-button:disabled{opacity:.5;cursor:not-allowed}
-.product-offer-banner{width:100%;margin:0 0 16px;padding:10px;border:1px solid #d8e8d0;border-radius:6px;background:#eff6e9;color:#315b3c;text-align:left;font-size:11px;font-weight:700;line-height:1.5}
+.product-offer-banner{align-self:flex-start;margin:0 0 16px;padding:7px 12px;border:1px solid #b9d2ad;border-radius:999px;background:#eff6e9;color:#315b3c;text-align:center;font-size:11px;font-weight:700;line-height:1.5}
 .product-offer-banner:hover{background:#e2efd9}
 .product-offer-banner:focus-visible{outline:3px solid #204c33;outline-offset:2px}
 #product-dialog{width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;border:0;border-radius:10px;padding:0;color:#193e2c;box-shadow:0 12px 45px #14291c55}
 #product-dialog::backdrop{background:#14291c99}
 .product-dialog-content{position:relative;padding:28px}
 .product-dialog-content h2{font:28px Georgia,serif;padding-right:25px}
+.product-dialog-image{display:flex;align-items:center;justify-content:center;height:min(420px,50vh);margin:18px 0;padding:22px;background:#f2f6ef;border-radius:10px;cursor:zoom-in}
+.product-dialog-image img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}
 .product-close{position:absolute;right:20px;top:15px}
 .product-detail-meta{font-size:12px;line-height:1.6;color:#718672}
 .product-detail-price{font-size:15px;font-weight:700}
@@ -63,11 +65,12 @@
 .shop .campaign-carousel{margin-top:20px;padding:16px;background:#e9f1e7;border:1px solid #dfeadd;border-radius:18px}
 .shop .campaign-slide{height:clamp(400px,60vw,620px);position:relative;isolation:isolate;overflow:hidden;border-radius:12px}
 .shop .campaign-slide::before{content:"";position:absolute;inset:-24px;z-index:-1;background-position:center;background-size:cover;filter:blur(20px) brightness(.65)}
-.shop .campaign-slide:nth-child(1)::before{background-image:url("./images/campaigns/b12-pix.jpeg")}
-.shop .campaign-slide:nth-child(2)::before{background-image:url("./images/campaigns/barril-chopp.jpeg")}
-.shop .campaign-slide:nth-child(3)::before{background-image:url("./images/campaigns/q10-b12.jpeg")}
-.shop .campaign-slide:nth-child(4)::before{background-image:url("./images/campaigns/regulax.jpeg")}
-.shop .campaign-slide:nth-child(5)::before{background-image:url("./images/campaigns/show-brindes.jpeg")}
+.shop .campaign-slide:nth-child(1)::before{background-image:url("./images/campaigns/b12-queimacure.jpeg")}
+.shop .campaign-slide:nth-child(2)::before{background-image:url("./images/campaigns/b12-pix.jpeg")}
+.shop .campaign-slide:nth-child(3)::before{background-image:url("./images/campaigns/barril-chopp.jpeg")}
+.shop .campaign-slide:nth-child(4)::before{background-image:url("./images/campaigns/q10-b12.jpeg")}
+.shop .campaign-slide:nth-child(5)::before{background-image:url("./images/campaigns/regulax.jpeg")}
+.shop .campaign-slide:nth-child(6)::before{background-image:url("./images/campaigns/show-brindes.jpeg")}
 .shop .campaign-slide img{border-radius:8px}
 .shop .campaign-controls{gap:0;padding-top:8px}
 .shop .campaign-controls .campaign-dot{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent}
@@ -84,8 +87,10 @@
 .shop .results-line{font-size:12px;color:#667d6c}
 .shop .product-grid{gap:16px}
 .shop .product-card{border:1px solid #e0e9df;border-radius:14px}
+.shop .product-card.promotional{border:2px solid #8caf67;box-shadow:0 0 0 3px #dfeccd}
 .shop .product-card:hover{box-shadow:0 12px 30px #24463114}
 .shop .product-image{height:200px;background:#f0f5ed}
+.shop .product-image,.shop .product-name{cursor:pointer}
 .shop .stock-tag{border-radius:6px;letter-spacing:.3px}
 .shop .product-info{padding:18px}
 .shop .product-name{font-size:14px;min-height:42px}
@@ -96,6 +101,7 @@
 .shop .product-quantity{margin-top:8px;justify-content:center}
 .shop .product-quantity button:disabled{opacity:.45;cursor:not-allowed}
 .shop .price{font-size:19px}
+.shop .old-price{margin-right:7px;color:#8b978c;font-size:12px;font-weight:500;text-decoration:line-through}
 .shop .add-button{width:42px;height:42px;border-radius:10px;background:#e1efdf}
 .shop .add-button:hover:not(:disabled){background:#204c33}
 .shop .cart{box-shadow:-12px 0 40px #163b2b1c}
