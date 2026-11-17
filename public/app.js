@@ -9,6 +9,7 @@ let loading = true;
 let catalogRequestInFlight = null;
 let catalogViewKey = '';
 let submitting = false;
+let promotionFilterActive = false;
 let orderVersion = 0;
 let orderId = crypto.randomUUID();
 let verifiedCnpj = '';
@@ -145,9 +146,30 @@ function activeDiscounts(product) {
     updatedAt >= sale.begin && updatedAt < sale.end && sale.priceCents < product.priceCents);
 }
 
+function appendProductOffers(details, product) {
+  if (!product.promotions.length) {
+    details.append(element('p', 'product-detail-meta', 'Nenhuma oferta cadastrada para este produto.'));
+    return;
+  }
+  for (const sale of product.promotions.slice().sort(promotionOrder)) {
+    const state = updatedAt < sale.begin ? 'Programada' : updatedAt >= sale.end ? 'Encerrada' : 'Ativa';
+    const title = sale.promotionTitle ? `${sale.promotionTitle} · ` : '';
+    const range = element('strong', '', `${promotionRange(sale)} · ${money(sale.priceCents)}/un.`);
+    const dates = element('span', 'product-detail-meta',
+      `${new Date(sale.begin).toLocaleDateString('pt-BR')} a ${new Date(sale.end).toLocaleDateString('pt-BR')} · ${state}`);
+    const row = element('article', 'product-offer-detail');
+    row.append(element('span', 'product-offer-name', `${title}${state}`), range, dates);
+    details.append(row);
+  }
+  details.append(element('p', 'form-note',
+    'Se ofertas ativas se sobrepõem para a mesma quantidade, é aplicada a que começou mais recentemente; em empate, vale o maior ID de promoção da Nexfar.'));
+}
+
 function renderProductDetails(product) {
   const details = $('product-details');
   details.replaceChildren();
+  $('product-dialog-eyebrow').textContent = 'PRODUTO E OFERTAS';
+  $('product-dialog-note').textContent = 'Ofertas e estoque sujeitos à confirmação comercial.';
   $('product-dialog-title').textContent = product.name;
   if (product.image) {
     const imageBox = element('div', 'product-dialog-image');
@@ -164,21 +186,26 @@ function renderProductDetails(product) {
   details.append(element('p', 'product-detail-meta', `Estoque informado: ${product.stock} · Venda em múltiplos de ${product.multiple}`));
   details.append(element('p', 'product-detail-price', `Preço de tabela: ${money(product.priceCents)} por unidade`));
   details.append(element('h3', 'product-offers-title', 'Ofertas recebidas da Nexfar'));
-  if (!product.promotions.length) {
-    details.append(element('p', 'product-detail-meta', 'Nenhuma oferta cadastrada para este produto.'));
-  } else {
-    for (const sale of product.promotions.slice().sort(promotionOrder)) {
-      const state = updatedAt < sale.begin ? 'Programada' : updatedAt >= sale.end ? 'Encerrada' : 'Ativa';
-      const title = sale.promotionTitle ? `${sale.promotionTitle} · ` : '';
-      const range = element('strong', '', `${promotionRange(sale)} · ${money(sale.priceCents)}/un.`);
-      const dates = element('span', 'product-detail-meta',
-        `${new Date(sale.begin).toLocaleDateString('pt-BR')} a ${new Date(sale.end).toLocaleDateString('pt-BR')} · ${state}`);
-      const row = element('article', 'product-offer-detail');
-      row.append(element('span', 'product-offer-name', `${title}${state}`), range, dates);
-      details.append(row);
-    }
-    details.append(element('p', 'form-note',
-      'Se ofertas ativas se sobrepõem para a mesma quantidade, é aplicada a que começou mais recentemente; em empate, vale o maior ID de promoção da Nexfar.'));
+  appendProductOffers(details, product);
+}
+
+function renderProductOffers(product) {
+  const details = $('product-details');
+  details.replaceChildren();
+  $('product-dialog-eyebrow').textContent = 'OFERTAS DO PRODUTO';
+  $('product-dialog-note').textContent = 'Preços e quantidades sujeitos à confirmação comercial.';
+  $('product-dialog-title').textContent = product.name;
+  details.append(element('div', 'offers-banner'));
+  const banner = details.children[details.children.length - 1];
+  for (const sale of product.promotions.slice().sort(promotionOrder)) {
+    const state = updatedAt < sale.begin ? 'Programada' : updatedAt >= sale.end ? 'Encerrada' : 'Ativa';
+    const row = element('div', 'offers-banner-row');
+    row.append(
+      element('span', 'offers-banner-quantity', promotionRange(sale)),
+      element('strong', 'offers-banner-price', `${money(sale.priceCents)}/un.`),
+      element('small', 'offers-banner-state', state)
+    );
+    banner.append(row);
   }
 }
 
@@ -208,7 +235,8 @@ function renderProducts() {
   const query = normalize($('search').value.trim());
   const visible = catalog.filter((p) =>
     normalize(`${p.name} ${p.id} ${p.ean} ${p.maker}`).includes(query) &&
-    (!$('available-only').checked || p.stock >= p.multiple));
+    (!$('available-only').checked || p.stock >= p.multiple) &&
+    (!promotionFilterActive || activeDiscounts(p).length > 0));
   if ($('sort').value === 'name') visible.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const initialPrice = (product) => window.EcofitusPricing.unitPrice(product, product.multiple, updatedAt).priceCents;
   if ($('sort').value === 'price-low') visible.sort((a, b) => initialPrice(a) - initialPrice(b));
@@ -252,7 +280,11 @@ function renderProducts() {
     if (product.multiple > 1) info.append(element('p', 'product-multiple', `Venda em múltiplos de ${product.multiple}`));
     const offerBanner = element('button', 'product-offer-banner', productOfferLabel(product));
     offerBanner.type = 'button';
-    offerBanner.addEventListener('click', openDetails);
+    offerBanner.addEventListener('click', () => {
+      if (product.promotions.length) renderProductOffers(product);
+      else renderProductDetails(product);
+      $('product-dialog').showModal();
+    });
     info.append(offerBanner);
     const bottom = element('div', 'product-bottom');
     const price = element('div');
@@ -484,6 +516,11 @@ document.addEventListener('keydown', (event) => {
 $('search').addEventListener('input', renderProducts);
 $('sort').addEventListener('change', renderProducts);
 $('available-only').addEventListener('change', renderProducts);
+$('promotion-filter').addEventListener('click', () => {
+  promotionFilterActive = !promotionFilterActive;
+  $('promotion-filter').setAttribute('aria-pressed', String(promotionFilterActive));
+  renderProducts();
+});
 $('retry-catalog').addEventListener('click', loadCatalog);
 $('product-close').addEventListener('click', () => $('product-dialog').close());
 $('product-dialog').addEventListener('click', (event) => {

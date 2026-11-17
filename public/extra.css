@@ -47,6 +47,11 @@
 .product-offers-title{margin:24px 0 10px;font-size:15px}
 .product-offer-detail{display:grid;gap:5px;padding:13px 0;border-bottom:1px solid #edf1ea;font-size:12px}
 .product-offer-name{color:#718672}
+.offers-banner{display:grid;gap:10px;margin-top:18px}
+.offers-banner-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 16px;padding:16px 18px;border:1px solid #b7d1aa;border-radius:10px;background:#eff6e9}
+.offers-banner-quantity{font-size:14px;font-weight:700}
+.offers-banner-price{color:#204c33;font-size:20px}
+.offers-banner-state{grid-column:1/-1;color:#718672;font-size:10px;text-transform:uppercase;letter-spacing:.8px}
 
 /* Loja */
 .shop{background:#f6f8f4;color:#173b2b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -79,9 +84,12 @@
 .shop .campaign-controls .campaign-dot:hover{background:#dcebdd}
 .shop .catalog{padding:44px 6% 90px}
 .shop .toolbar{align-items:stretch;gap:10px;margin-top:24px}
-.shop .search,.shop .sort-label,.availability-filter{border:1px solid #dce7dc;border-radius:10px;background:#fff}
+.shop .search,.shop .sort-label,.availability-filter,.promotion-filter{border:1px solid #dce7dc;border-radius:10px;background:#fff}
 .shop .search:focus-within{border-color:#5d956b;box-shadow:0 0 0 3px #dcecdf}
 .shop .search input,.shop .sort-label select{font-size:14px}
+.promotion-filter{padding:0 16px;color:#234c32;font-size:12px;font-weight:800;white-space:nowrap}
+.promotion-filter:hover{background:#edf5e8}
+.promotion-filter[aria-pressed="true"]{border-color:#204c33;background:#204c33;color:#fff}
 .availability-filter{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;color:#3b5c45;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
 .availability-filter input{width:17px;height:17px;accent-color:#245d3c}
 .shop .results-line{font-size:12px;color:#667d6c}
@@ -125,6 +133,7 @@
   .shop .catalog{padding:36px 5% 65px}
   .shop .toolbar{display:grid;grid-template-columns:1fr 1fr}
   .shop .search{grid-column:1/-1}
+  .promotion-filter{min-height:42px}
   .shop .sort-label{padding:0 10px}
   .shop .sort-label select{font-size:12px;min-width:0}
   .availability-filter{padding:10px;font-size:11px;white-space:normal}

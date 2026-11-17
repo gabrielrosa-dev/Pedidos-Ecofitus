@@ -54,6 +54,7 @@
       </div>
       <div class="toolbar">
         <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Busque por nome, código ou marca..." aria-label="Buscar produtos"></label>
+        <button type="button" class="promotion-filter" id="promotion-filter" aria-pressed="false">Promoções / Black Friday</button>
         <label class="availability-filter"><input id="available-only" type="checkbox"> Apenas disponíveis</label>
         <label class="sort-label">Ordenar por <select id="sort" aria-label="Ordenar produtos"><option value="name">Nome A–Z</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option></select></label>
       </div>
@@ -78,10 +79,10 @@
   <dialog id="product-dialog" aria-labelledby="product-dialog-title">
     <div class="product-dialog-content">
       <button type="button" id="product-close" class="close product-close" aria-label="Fechar informações do produto">×</button>
-      <p class="eyebrow">PRODUTO E OFERTAS</p>
+      <p class="eyebrow" id="product-dialog-eyebrow">PRODUTO E OFERTAS</p>
       <h2 id="product-dialog-title"></h2>
       <div id="product-details"></div>
-      <p class="form-note">Ofertas e estoque sujeitos à confirmação comercial.</p>
+      <p class="form-note" id="product-dialog-note">Ofertas e estoque sujeitos à confirmação comercial.</p>
     </div>
   </dialog>
   <div class="overlay" id="overlay" hidden></div>
