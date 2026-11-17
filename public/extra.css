@@ -32,6 +32,19 @@
 .campaign-total{font-weight:700;font-size:17px}
 .campaign-remove{align-self:start;border:1px solid #d5e0d1;background:white;color:#315b3c;border-radius:5px;padding:8px;font-size:11px}
 .submit-button:disabled{opacity:.5;cursor:not-allowed}
+.product-offer-banner{width:100%;margin:0 0 16px;padding:10px;border:1px solid #d8e8d0;border-radius:6px;background:#eff6e9;color:#315b3c;text-align:left;font-size:11px;font-weight:700;line-height:1.5}
+.product-offer-banner:hover{background:#e2efd9}
+.product-offer-banner:focus-visible{outline:3px solid #204c33;outline-offset:2px}
+#product-dialog{width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;border:0;border-radius:10px;padding:0;color:#193e2c;box-shadow:0 12px 45px #14291c55}
+#product-dialog::backdrop{background:#14291c99}
+.product-dialog-content{position:relative;padding:28px}
+.product-dialog-content h2{font:28px Georgia,serif;padding-right:25px}
+.product-close{position:absolute;right:20px;top:15px}
+.product-detail-meta{font-size:12px;line-height:1.6;color:#718672}
+.product-detail-price{font-size:15px;font-weight:700}
+.product-offers-title{margin:24px 0 10px;font-size:15px}
+.product-offer-detail{display:grid;gap:5px;padding:13px 0;border-bottom:1px solid #edf1ea;font-size:12px}
+.product-offer-name{color:#718672}
 
 /* Loja */
 .shop{background:#f6f8f4;color:#173b2b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}

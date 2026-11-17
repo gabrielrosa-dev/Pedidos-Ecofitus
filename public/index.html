@@ -55,7 +55,7 @@
         <label class="availability-filter"><input id="available-only" type="checkbox"> Apenas disponíveis</label>
         <label class="sort-label">Ordenar por <select id="sort" aria-label="Ordenar produtos"><option value="name">Nome A–Z</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option></select></label>
       </div>
-      <div class="results-line"><span id="result-count">Carregando produtos...</span><span>Preços finais da tabela</span></div>
+      <div class="results-line"><span id="result-count">Carregando produtos...</span><span>Preços e ofertas por quantidade</span></div>
       <p class="notice" id="catalog-error" role="alert" hidden></p>
       <button type="button" class="retry-button" id="retry-catalog" hidden>Tentar atualizar catálogo</button>
       <div class="product-grid" id="products"></div>
@@ -71,6 +71,15 @@
       <div id="campaign-details"></div>
       <p id="campaign-message" class="form-error" role="status" hidden></p>
       <button type="button" id="campaign-add" class="submit-button">Adicionar ao carrinho <span>↗</span></button>
+    </div>
+  </dialog>
+  <dialog id="product-dialog" aria-labelledby="product-dialog-title">
+    <div class="product-dialog-content">
+      <button type="button" id="product-close" class="close product-close" aria-label="Fechar informações do produto">×</button>
+      <p class="eyebrow">PRODUTO E OFERTAS</p>
+      <h2 id="product-dialog-title"></h2>
+      <div id="product-details"></div>
+      <p class="form-note">Ofertas e estoque sujeitos à confirmação comercial.</p>
     </div>
   </dialog>
   <div class="overlay" id="overlay" hidden></div>
