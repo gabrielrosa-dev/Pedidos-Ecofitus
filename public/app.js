@@ -20,6 +20,25 @@ const cart = new Map();
 const productSummaries = new Map();
 const selectedCampaigns = new Set();
 let activeCampaign;
+let assignedRepresentative = null;
+try {
+  assignedRepresentative = window.EcofitusRepresentatives.representativeFromSearch(location.search);
+} catch (error) {
+  if (typeof localStorage !== 'undefined') {
+    const remembered = localStorage.getItem('ecofitus-representative');
+    try {
+      assignedRepresentative = window.EcofitusRepresentatives.getRepresentative(remembered);
+    } catch {
+      console.warn(error.message);
+    }
+  } else {
+    console.warn(error.message);
+  }
+}
+if (assignedRepresentative && typeof localStorage !== 'undefined') {
+  localStorage.setItem('ecofitus-representative', assignedRepresentative.id);
+}
+if (assignedRepresentative && document.querySelector) document.querySelector('.brand').href = `./${location.search}`;
 
 function reservedQuantity(id) {
   let total = cart.get(id) || 0;
@@ -146,6 +165,14 @@ function activeDiscounts(product) {
     updatedAt >= sale.begin && updatedAt < sale.end && sale.priceCents < product.priceCents);
 }
 
+function offerReason(product, sale) {
+  const minimum = Math.max(product.multiple, Math.ceil(sale.minQuantity / product.multiple) * product.multiple);
+  const quantity = sale.maxQuantity >= 9999
+    ? `a partir de ${minimum} unidades`
+    : `de ${minimum} a ${sale.maxQuantity} unidades`;
+  return `${sale.promotionTitle ? `${sale.promotionTitle}: ` : 'Condição especial: '}${quantity}`;
+}
+
 function appendProductOffers(details, product) {
   if (!product.promotions.length) {
     details.append(element('p', 'product-detail-meta', 'Nenhuma oferta cadastrada para este produto.'));
@@ -212,7 +239,7 @@ function renderProductOffers(product) {
 function updateProductSummary(product, controls) {
   const quantity = cart.get(product.id) || 0;
   const calculatedPrice = window.EcofitusPricing.unitPrice(product, quantity || product.multiple, updatedAt);
-  const featuredPromotion = activeDiscounts(product)[0];
+  const featuredPromotion = window.EcofitusPricing.lowestActiveOffer(product, updatedAt);
   const price = quantity || !featuredPromotion ? calculatedPrice : {
     priceCents: featuredPromotion.priceCents,
     taxesConfirmed: featuredPromotion.taxesConfirmed,
@@ -226,7 +253,13 @@ function updateProductSummary(product, controls) {
   controls.price.textContent = money(price.priceCents);
   controls.oldPrice.hidden = !price.promotional || price.priceCents >= product.priceCents;
   controls.oldPrice.textContent = money(product.priceCents);
-  controls.priceLabel.textContent = price.taxesConfirmed ? 'Preço unitário c/ impostos' : 'Impostos não confirmados';
+  controls.priceLabel.textContent = quantity
+    ? (price.taxesConfirmed ? 'Preço unitário c/ impostos' : 'Impostos não confirmados')
+    : featuredPromotion
+      ? `Menor preço ${money(featuredPromotion.priceCents)}`
+      : (price.taxesConfirmed ? 'Preço unitário c/ impostos' : 'Impostos não confirmados');
+  controls.offerReason.textContent = !quantity && featuredPromotion ? offerReason(product, featuredPromotion) : '';
+  controls.offerReason.hidden = !controls.offerReason.textContent;
   controls.text.textContent = quantity ? `Avulsos: ${quantity} un. · Subtotal: ${money(quantity * price.priceCents)}` : '';
 }
 
@@ -238,7 +271,10 @@ function renderProducts() {
     (!$('available-only').checked || p.stock >= p.multiple) &&
     (!promotionFilterActive || activeDiscounts(p).length > 0));
   if ($('sort').value === 'name') visible.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-  const initialPrice = (product) => window.EcofitusPricing.unitPrice(product, product.multiple, updatedAt).priceCents;
+  const initialPrice = (product) => {
+    const offer = window.EcofitusPricing.lowestActiveOffer(product, updatedAt);
+    return offer ? offer.priceCents : product.priceCents;
+  };
   if ($('sort').value === 'price-low') visible.sort((a, b) => initialPrice(a) - initialPrice(b));
   if ($('sort').value === 'price-high') visible.sort((a, b) => initialPrice(b) - initialPrice(a));
   $('products').replaceChildren();
@@ -289,12 +325,13 @@ function renderProducts() {
     const bottom = element('div', 'product-bottom');
     const price = element('div');
     const priceLabel = element('span', 'price-label');
+    const offerReasonLabel = element('small', 'product-offer-reason');
     const priceValues = element('span', 'price-values');
     const oldPrice = element('span', 'old-price');
     const priceValue = element('span', 'price');
     oldPrice.setAttribute('aria-label', 'Preço anterior');
     priceValues.append(oldPrice, priceValue);
-    price.append(priceLabel, priceValues);
+    price.append(priceLabel, priceValues, offerReasonLabel);
     const button = element('button', 'add-button', '+');
     button.type = 'button';
     button.disabled = !available || stale;
@@ -334,7 +371,7 @@ function renderProducts() {
     input.addEventListener('change', () => applyQuantity(input.valueAsNumber));
     quantityControls.append(minus, input, plus);
     summary.append(text, quantityControls, quantityError);
-    const controls = { product, summary, text, input, add: button, plus, price: priceValue, oldPrice, priceLabel };
+    const controls = { product, summary, text, input, add: button, plus, price: priceValue, oldPrice, priceLabel, offerReason: offerReasonLabel };
     updateProductSummary(product, controls);
     productSummaries.set(product.id, controls);
     info.append(bottom, summary);
@@ -437,7 +474,8 @@ function renderCart() {
   $('cart-total').textContent = money(total);
   $('progress-bar').style.width = `${Math.min(100, total / 5000 * 100)}%`;
   $('minimum-text').textContent = total >= 5000 ? 'Pedido mínimo atingido ✓' : `Faltam ${money(5000 - total)} para o pedido mínimo.`;
-  $('submit-order').disabled = submitting || stale || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
+  $('submit-order').disabled = submitting || stale || !assignedRepresentative || productInvalid || campaignInvalid || (!cart.size && !selectedCampaigns.size) || total < 5000;
+  $('representative-link-warning').hidden = Boolean(assignedRepresentative);
   for (const controls of productSummaries.values()) updateProductSummary(controls.product, controls);
 }
 
@@ -516,10 +554,17 @@ document.addEventListener('keydown', (event) => {
 $('search').addEventListener('input', renderProducts);
 $('sort').addEventListener('change', renderProducts);
 $('available-only').addEventListener('change', renderProducts);
-$('promotion-filter').addEventListener('click', () => {
-  promotionFilterActive = !promotionFilterActive;
+function setPromotionFilter(active) {
+  promotionFilterActive = active;
   $('promotion-filter').setAttribute('aria-pressed', String(promotionFilterActive));
   renderProducts();
+}
+$('promotion-filter').addEventListener('click', () => {
+  setPromotionFilter(!promotionFilterActive);
+});
+$('black-friday-banner').addEventListener('click', () => {
+  setPromotionFilter(true);
+  $('produtos').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 $('retry-catalog').addEventListener('click', loadCatalog);
 $('product-close').addEventListener('click', () => $('product-dialog').close());
@@ -599,6 +644,7 @@ $('order-form').addEventListener('submit', async (event) => {
   let orderRequested = false;
   $('submit-order').disabled = true;
   try {
+    if (!assignedRepresentative) throw new Error('Acesse o catálogo pelo link enviado pelo seu representante.');
     const cnpj = $('cnpj').value.replace(/\D/g, '');
     if (verifiedCnpj !== cnpj) {
       if (cnpj.length !== 14) throw new Error('Informe um CNPJ completo.');
@@ -621,6 +667,7 @@ $('order-form').addEventListener('submit', async (event) => {
     orderRequested = true;
     const result = await window.ecofitusRequest('/api/order', {
         id: orderId,
+        representativeId: assignedRepresentative.id,
         cnpj: $('cnpj').value,
         terms: $('terms').value,
         items: Array.from(cart, ([id, quantity]) => ({ id, quantity })),

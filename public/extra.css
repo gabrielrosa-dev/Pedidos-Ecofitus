@@ -2,9 +2,45 @@
 .lookup-button{background:#eaf2e4;color:#204c33;border:0;border-radius:5px;padding:10px 14px;font-size:12px;font-weight:700}
 .lookup-button:disabled{opacity:.6;cursor:wait}
 .admin-main{max-width:1000px;margin:40px auto;padding:0 20px}
+.admin-page{background:#f4f7f2;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.admin-main{max-width:1180px}
+.admin-login-panel{max-width:460px;margin:70px auto;padding:28px;border:1px solid #dce7dc;border-radius:16px;background:#fff;box-shadow:0 14px 40px #23412d12}
+.admin-login-panel h1{margin:8px 0 10px;font-size:32px}
+.admin-login-panel>p{color:#667c6c;font-size:13px;line-height:1.6}
+.admin-login-panel form{display:grid;gap:16px;margin-top:24px}
+.admin-login-panel label{display:grid;gap:7px;color:#506957;font-size:12px;font-weight:700}
+.admin-login-panel input{padding:13px;border:1px solid #d7e3d6;border-radius:8px;font:inherit}
+.admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.footer-links{display:flex;flex-direction:column;gap:10px;text-align:right}
+.admin-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
+.admin-heading h1{margin:6px 0;font-size:clamp(26px,4vw,40px)}
+.admin-heading h1 span{color:#6f994e}
+.admin-heading p{color:#6f8173}
+.admin-filters{display:grid;grid-template-columns:1fr 1fr auto auto minmax(180px,auto);gap:12px;align-items:end;padding:18px;border:1px solid #dce7dc;border-radius:14px;background:#fff;box-shadow:0 8px 24px #23412d0a}
+.admin-filters label,.admin-company-fields label,.admin-item-row label{display:grid;gap:6px;color:#506957;font-size:11px;font-weight:700}
+.admin-filters input,.admin-company-fields input,.admin-item-row input{width:100%;padding:11px;border:1px solid #d7e3d6;border-radius:7px;color:#193e2c;background:#fff;font:inherit}
+.admin-secondary-button{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid #cddbc9;border-radius:7px;background:#fff;color:#315b3c;font:700 12px Arial,sans-serif}
+.admin-total{display:grid;gap:4px;padding-left:12px;border-left:1px solid #e3ebe0}
+.admin-total span{color:#718672;font-size:11px}.admin-total strong{font-size:21px}
+.admin-status{min-height:18px;color:#617765;font-size:13px}
 .admin-order{background:white;border:1px solid #e5ebe2;border-radius:6px;padding:20px;margin:15px 0}
-.admin-order pre{font:13px/1.6 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-order{border-radius:14px;padding:22px;box-shadow:0 8px 24px #23412d08}
+.admin-order-heading{display:flex;justify-content:space-between;gap:20px;align-items:start}
+.admin-order-heading>div{display:grid;gap:5px}
+.admin-order-date,.admin-order-id{color:#718672;font-size:11px}.admin-order-id{font-family:monospace}
+.admin-order-total{color:#204c33;font-size:22px;white-space:nowrap}
+.admin-order pre{margin:20px 0;padding:18px;border-radius:9px;background:#f5f8f3;font:13px/1.6 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
 .admin-order a{display:inline-block;color:#258449;font-weight:700}
+.admin-order-actions{display:flex;gap:10px}
+.admin-edit-dialog{width:min(840px,calc(100% - 24px));max-height:calc(100% - 24px);overflow-y:auto;border:0;border-radius:14px;padding:0;color:#193e2c;box-shadow:0 20px 60px #10251955}
+.admin-edit-dialog::backdrop{background:#14291c99}
+.admin-edit-dialog form{padding:26px}
+.admin-edit-heading{display:flex;justify-content:space-between;align-items:start}.admin-edit-heading h2{margin:6px 0 22px;font-size:26px}
+.admin-company-fields{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px}
+.admin-edit-items{display:grid;gap:10px}
+.admin-item-row{display:grid;grid-template-columns:2fr 100px 145px;gap:10px;padding:12px;border-radius:9px;background:#f4f7f2}
+.admin-edit-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:22px;padding-top:18px;border-top:1px solid #e0e8df}.admin-edit-footer .submit-button{width:auto;margin:0}
+@media(max-width:760px){.admin-heading,.admin-order-heading,.admin-edit-footer{align-items:stretch;flex-direction:column}.admin-filters{grid-template-columns:1fr 1fr}.admin-total{grid-column:1/-1;padding:12px 0 0;border-left:0;border-top:1px solid #e3ebe0}.admin-company-fields,.admin-item-row{grid-template-columns:1fr}.admin-order-actions{flex-wrap:wrap}}
 .header-actions{display:flex;align-items:center;gap:10px}
 .install-button{border:1px solid #d5e0d1;background:#eff5e9;color:#204c33;border-radius:7px;padding:12px 14px;font-size:12px;font-weight:700}
 .install-button:hover{background:#dfead7}
@@ -32,7 +68,7 @@
 .campaign-total{font-weight:700;font-size:17px}
 .campaign-remove{align-self:start;border:1px solid #d5e0d1;background:white;color:#315b3c;border-radius:5px;padding:8px;font-size:11px}
 .submit-button:disabled{opacity:.5;cursor:not-allowed}
-.product-offer-banner{align-self:flex-start;margin:0 0 16px;padding:7px 12px;border:1px solid #b9d2ad;border-radius:999px;background:#eff6e9;color:#315b3c;text-align:center;font-size:11px;font-weight:700;line-height:1.5}
+.product-offer-banner{align-self:flex-start;margin:0 0 16px;padding:9px 14px;border:1px solid #e87913;border-radius:999px;background:linear-gradient(135deg,#fff0d9,#ffd79d);color:#9c4100;text-align:center;font-size:12px;font-weight:900;line-height:1.5;box-shadow:0 4px 10px #d96b1320}
 .product-offer-banner:hover{background:#e2efd9}
 .product-offer-banner:focus-visible{outline:3px solid #204c33;outline-offset:2px}
 #product-dialog{width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;border:0;border-radius:10px;padding:0;color:#193e2c;box-shadow:0 12px 45px #14291c55}
@@ -56,7 +92,7 @@
 /* Loja */
 .shop{background:#f6f8f4;color:#173b2b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .shop .topline{height:32px;background:#163b2b;letter-spacing:1.2px}
-.shop .header{position:sticky;top:0;z-index:4;height:74px;padding:0 max(5%,calc((100% - 1280px)/2));border-bottom:1px solid #e3ebe2;background:#ffffffed;backdrop-filter:blur(12px)}
+.shop .header{position:sticky;top:48px;z-index:3;height:74px;padding:0 max(5%,calc((100% - 1280px)/2));border-bottom:1px solid #e3ebe2;background:#ffffffed;backdrop-filter:blur(12px)}
 .shop .header nav{gap:26px;color:#526c5a}
 .shop .header nav a:hover{color:#1d603f}
 .shop .cart-button{background:#1b4c35;color:#fff;border-color:#1b4c35;border-radius:10px;padding:11px 15px}
@@ -87,9 +123,18 @@
 .shop .search,.shop .sort-label,.availability-filter,.promotion-filter{border:1px solid #dce7dc;border-radius:10px;background:#fff}
 .shop .search:focus-within{border-color:#5d956b;box-shadow:0 0 0 3px #dcecdf}
 .shop .search input,.shop .sort-label select{font-size:14px}
-.promotion-filter{padding:0 16px;color:#234c32;font-size:12px;font-weight:800;white-space:nowrap}
+.promotion-filter{padding:0 18px;border-color:#ed7f16!important;background:#fff2df!important;color:#9e4300!important;box-shadow:0 4px 12px #d96b1320;font-size:12px;font-weight:900;letter-spacing:.35px;white-space:nowrap}
 .promotion-filter:hover{background:#edf5e8}
-.promotion-filter[aria-pressed="true"]{border-color:#204c33;background:#204c33;color:#fff}
+.promotion-filter[aria-pressed="true"]{border-color:#d64d00!important;background:#e85d04!important;color:#fff!important;box-shadow:0 5px 14px #b9460040}
+.shop{padding-top:48px}
+.shop .black-friday-banner{position:fixed;inset:0 0 auto;z-index:4;display:flex;align-items:center;justify-content:center;gap:18px;width:100%;height:48px;padding:0 5%;border:0;border-bottom:2px solid #a93a00;background:linear-gradient(105deg,#9f2f00,#e85d04 48%,#ff9f1c);color:#fff;box-shadow:0 5px 18px #9b390040;font-size:12px;text-align:center}
+.shop .black-friday-banner strong{font-size:16px;letter-spacing:1px;text-shadow:0 1px 2px #7d2800}
+.shop .black-friday-banner b{padding:7px 12px;border:1px solid #ffffff88;border-radius:999px;background:#fff;color:#bd4300;font-size:11px;letter-spacing:.4px}
+.shop .black-friday-banner:hover b{background:#fff1d6;transform:translateY(-1px)}
+.shop .header{top:48px}
+.representative-link-warning{padding:12px;border:1px solid #edb46c;border-radius:8px;background:#fff3df;color:#8f4100;font-size:12px;line-height:1.5}
+.product-offer-reason{display:block;max-width:145px;margin-top:6px;color:#a34a00;font-size:10px;line-height:1.35;font-weight:700}
+#order-form select{display:block;width:100%;margin-top:8px;padding:13px;border:1px solid #dfe8dc;border-radius:5px;background:#fff;color:#173b2b;outline-color:#89aa72;font-size:13px}
 .availability-filter{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;color:#3b5c45;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
 .availability-filter input{width:17px;height:17px;accent-color:#245d3c}
 .shop .results-line{font-size:12px;color:#667d6c}
@@ -126,6 +171,12 @@
 .shop .submit-button,.shop .whatsapp-link{border-radius:10px;font-size:13px}
 .shop :focus-visible{outline:3px solid #76a783;outline-offset:3px}
 @media(max-width:650px){
+  .shop{padding-top:58px}
+  .shop .black-friday-banner{height:58px;gap:8px;padding:0 8px}
+  .shop .black-friday-banner strong{font-size:13px}
+  .shop .black-friday-banner>span:not(:first-child){display:none}
+  .shop .black-friday-banner b{padding:6px 8px;font-size:9px}
+  .shop .header{top:58px}
   .shop .header{height:66px;padding:0 5%}
   .shop .campaign-section{padding:32px 2% 12px}
   .shop .campaign-carousel{padding:10px;border-radius:14px}
@@ -143,4 +194,5 @@
   .shop .product-name{font-size:12px}
   .shop .price{font-size:16px}
   .shop .add-button{width:38px;height:38px}
+  .footer-links{text-align:left}
 }

@@ -41,7 +41,11 @@ window.ecofitusRequest = function (path, body) {
       document.head.append(script);
     });
   }
-  const action = path === '/api/company' ? 'company' : path === '/api/order' ? 'order' : '';
+  const action = path === '/api/company' ? 'company'
+    : path === '/api/order' ? 'order'
+    : path.startsWith('/api/admin/orders/') ? 'adminUpdate'
+    : path === '/api/admin/orders' ? 'adminList'
+    : '';
   if (!action || body === undefined) return Promise.reject(new Error('Operação não suportada.'));
   return new Promise((resolve, reject) => {
     const nonce = crypto.randomUUID();
@@ -53,7 +57,11 @@ window.ecofitusRequest = function (path, body) {
     form.method = 'POST';
     form.action = scriptUrl;
     form.target = iframe.name;
-    const payload = action === 'company' ? { action, cnpj: body.cnpj } : { action, order: body };
+    const payload = action === 'company'
+      ? { action, cnpj: body.cnpj }
+      : action === 'order'
+        ? { action, order: body }
+        : { action, auth: body.auth, start: body.start, end: body.end, orderId: body.orderId, changes: body.changes };
     for (const [name, value] of Object.entries({ nonce, payload: JSON.stringify(payload) })) {
       const input = document.createElement('input');
       input.name = name;

@@ -15,11 +15,18 @@
   <script src="./config.js" defer></script>
   <script src="./transport.js" defer></script>
   <script src="./pricing.js" defer></script>
+  <script src="./representatives.js" defer></script>
   <script src="./campaigns.js" defer></script>
   <script src="./experience.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body class="shop">
+  <button class="black-friday-banner" id="black-friday-banner" type="button" aria-controls="produtos">
+    <span aria-hidden="true">🔥</span>
+    <strong>BLACK FRIDAY ECOFITUS</strong>
+    <span>Preços especiais por campanha e quantidade</span>
+    <b>VER OFERTAS <span aria-hidden="true">↓</span></b>
+  </button>
   <div class="topline">CUIDADO QUE VEM DA NATUREZA <span>✦</span> PEDIDO MÍNIMO DE R$ 50,00</div>
   <header class="header">
     <a class="brand" href="./" aria-label="Ecofitus, início"><span class="brand-mark">e<span>✳</span></span><span>eco<span>fitus</span><small>CATÁLOGO DE PRODUTOS</small></span></a>
@@ -54,7 +61,7 @@
       </div>
       <div class="toolbar">
         <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Busque por nome, código ou marca..." aria-label="Buscar produtos"></label>
-        <button type="button" class="promotion-filter" id="promotion-filter" aria-pressed="false">Promoções / Black Friday</button>
+        <button type="button" class="promotion-filter" id="promotion-filter" aria-pressed="false"><span aria-hidden="true">🔥</span> BLACK FRIDAY / OFERTAS</button>
         <label class="availability-filter"><input id="available-only" type="checkbox"> Apenas disponíveis</label>
         <label class="sort-label">Ordenar por <select id="sort" aria-label="Ordenar produtos"><option value="name">Nome A–Z</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option></select></label>
       </div>
@@ -65,7 +72,7 @@
       <p class="empty" id="empty" hidden>Nenhum produto encontrado. Tente outra busca ou ajuste os filtros.</p>
     </section>
   </main>
-  <footer><div class="footer-brand">eco<span>fitus</span><small>Mais natureza no seu dia.</small></div><p>Catálogo de produtos · Pedidos sujeitos à confirmação comercial.</p><a href="#produtos">Voltar ao catálogo ↑</a></footer>
+  <footer><div class="footer-brand">eco<span>fitus</span><small>Mais natureza no seu dia.</small></div><p>Catálogo de produtos · Pedidos sujeitos à confirmação comercial.</p><div class="footer-links"><a href="./admin/">Área do representante</a><a href="#produtos">Voltar ao catálogo ↑</a></div></footer>
   <dialog id="campaign-dialog" aria-labelledby="campaign-dialog-title">
     <div class="campaign-dialog-content">
       <button type="button" id="campaign-close" class="close campaign-close" aria-label="Fechar exemplo">×</button>
@@ -95,6 +102,7 @@
       <div class="total-row"><span>Total dos produtos</span><strong id="cart-total">R$ 0,00</strong></div>
       <div class="minimum"><div class="progress"><div id="progress-bar"></div></div><p id="minimum-text">Pedido mínimo de R$ 50,00</p></div>
       <form id="order-form">
+        <p class="representative-link-warning" id="representative-link-warning" role="alert" hidden>Este catálogo foi aberto sem um link de representante válido. Peça ao seu representante o link correto para concluir o pedido.</p>
         <label>CNPJ do comprador<input id="cnpj" name="cnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" required maxlength="18" aria-describedby="company-status"></label>
         <p id="company-status" class="form-note" role="status">A razão social será consultada automaticamente ao preencher o CNPJ.</p>
         <label>Prazo liberado<input id="terms" name="terms" placeholder="Ex.: 28 dias" required minlength="2" maxlength="100"></label>
