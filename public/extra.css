@@ -8,6 +8,7 @@
 .admin-login-panel h1{margin:8px 0 10px;font-size:32px}
 .admin-login-panel>p{color:#667c6c;font-size:13px;line-height:1.6}
 .admin-login-panel form{display:grid;gap:16px;margin-top:24px}
+.admin-login-panel .admin-home-button{width:100%;margin-top:12px}
 .admin-login-panel label{display:grid;gap:7px;color:#506957;font-size:12px;font-weight:700}
 .admin-login-panel input{padding:13px;border:1px solid #d7e3d6;border-radius:8px;font:inherit}
 .admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
