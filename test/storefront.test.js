@@ -306,7 +306,7 @@ test('botão de ofertas abre um banner apenas com quantidades e preços', async 
   assert.equal(get('product-dialog-eyebrow').textContent, 'OFERTAS DO PRODUTO');
 });
 
-test('oculta ofertas sem desconto real, mas mantém campanha identificada', async () => {
+test('oculta promoções sem diferença de preço mesmo quando têm título', async () => {
   const { context, get, products, snapshot } = await storefront();
   products[0].promotions = [{
     priceCents: products[0].priceCents, taxesConfirmed: true, begin: 100, end: 500,
@@ -323,14 +323,10 @@ test('oculta ofertas sem desconto real, mas mantém campanha identificada', asyn
   };
   assert.equal(findOfferButton(), undefined);
 
-  products[0].promotions[0].promotionTitle = 'Campanha especial';
+  products[0].promotions[0].promotionTitle = 'Dpr ecofitus/mova';
   snapshot.updatedAt++;
   await context.loadCatalog();
-  const button = findOfferButton();
-  assert.equal(button.textContent, 'Ofertas');
-  button.dispatch('click');
-  const offer = get('product-details').children[0].children[0];
-  assert.match(offer.children[0].textContent, /Campanha especial/);
+  assert.equal(findOfferButton(), undefined);
 });
 
 test('divergência de preço atualiza o catálogo e pede revisão sem liberar WhatsApp', async () => {

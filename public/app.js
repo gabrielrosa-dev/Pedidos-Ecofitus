@@ -200,19 +200,13 @@ function promotionRange(sale) {
     : `${sale.minQuantity} a ${sale.maxQuantity} un.`;
 }
 
-function activeOffers(product) {
+function activeDiscounts(product) {
   return product.promotions.slice().sort(promotionOrder).filter((sale) => {
     const minimum = Math.max(product.multiple, Math.ceil(sale.minQuantity / product.multiple) * product.multiple);
     const available = updatedAt >= sale.begin && updatedAt < sale.end &&
       minimum <= sale.maxQuantity && minimum <= product.stock;
-    const hasDiscount = sale.priceCents < product.priceCents;
-    const hasCampaign = typeof sale.promotionTitle === 'string' && sale.promotionTitle.trim().length > 0;
-    return available && (hasDiscount || hasCampaign);
+    return available && sale.priceCents < product.priceCents;
   });
-}
-
-function activeDiscounts(product) {
-  return activeOffers(product).filter((sale) => sale.priceCents < product.priceCents);
 }
 
 function offerReason(product, sale) {
@@ -274,7 +268,7 @@ function renderProductOffers(product) {
   $('product-dialog-title').textContent = product.name;
   details.append(element('div', 'offers-banner'));
   const banner = details.children[details.children.length - 1];
-  for (const sale of activeOffers(product)) {
+  for (const sale of activeDiscounts(product)) {
     const row = element('div', 'offers-banner-row');
     row.append(
       element('span', 'offers-banner-quantity', `${sale.promotionTitle ? `${sale.promotionTitle} · ` : ''}${promotionRange(sale)}`),
@@ -363,7 +357,7 @@ function renderProducts() {
     info.append(productName);
     info.append(element('p', 'product-code', `Código: ${product.ean || product.id}`));
     if (product.multiple > 1) info.append(element('p', 'product-multiple', `Venda em múltiplos de ${product.multiple}`));
-    if (activeOffers(product).length) {
+    if (activeDiscounts(product).length) {
       const offerBanner = element('button', 'product-offer-banner', 'Ofertas');
       offerBanner.type = 'button';
       offerBanner.addEventListener('click', () => {
