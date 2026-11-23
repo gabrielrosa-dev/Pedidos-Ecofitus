@@ -4,6 +4,12 @@ const money = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currenc
 const $ = (id) => document.getElementById(id);
 let credentials = null;
 let selectedOrder = null;
+for (const term of window.EcofitusTerms.terms) {
+  const option = document.createElement('option');
+  option.value = term;
+  option.textContent = term;
+  $('edit-terms').append(option);
+}
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -90,6 +96,11 @@ function openEditor(order) {
   selectedOrder = structuredClone(order);
   $('edit-title').textContent = `Pedido ${order.id.slice(0, 8)}`;
   $('edit-company').value = order.companyName;
+  if (!window.EcofitusTerms.isValidTerm(order.terms)) {
+    const option = element('option', '', order.terms);
+    option.value = order.terms;
+    $('edit-terms').append(option);
+  }
   $('edit-terms').value = order.terms;
   $('edit-items').replaceChildren();
   for (const item of order.items) {

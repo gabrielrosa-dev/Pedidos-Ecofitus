@@ -2,8 +2,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
+const pricing = fs.readFileSync(path.join(root, 'public', 'pricing.js'), 'utf8');
+const terms = fs.readFileSync(path.join(root, 'public', 'terms.js'), 'utf8');
 const campaign = fs.readFileSync(path.join(root, 'public', 'campaigns.js'), 'utf8');
 const catalog = fs.readFileSync(path.join(root, 'catalog.js'), 'utf8');
-fs.writeFileSync(path.join(__dirname, 'Campaigns.gs'), `function campaignCore_() {\nconst module = { exports: {} };\n${campaign}\nreturn module.exports;\n}\n`);
-fs.writeFileSync(path.join(__dirname, 'Catalog.gs'), `function catalogCore_() {\nconst module = { exports: {} };\nfunction require(name) { if (name === './public/campaigns') return campaignCore_(); throw new Error('Módulo desconhecido: ' + name); }\n${catalog}\nreturn module.exports;\n}\n`);
+fs.writeFileSync(path.join(__dirname, 'Campaigns.gs'), `function pricingCore_() {\nconst module = { exports: {} };\n${pricing}\nreturn module.exports;\n}\nfunction campaignCore_() {\nconst module = { exports: {} };\nfunction require(name) { if (name === './pricing') return pricingCore_(); throw new Error('Módulo desconhecido: ' + name); }\n${campaign}\nreturn module.exports;\n}\n`);
+fs.writeFileSync(path.join(__dirname, 'Catalog.gs'), `function termsCore_() {\nconst module = { exports: {} };\n${terms}\nreturn module.exports;\n}\nfunction catalogCore_() {\nconst module = { exports: {} };\nfunction require(name) { if (name === './public/campaigns') return campaignCore_(); if (name === './public/pricing') return pricingCore_(); if (name === './public/terms') return termsCore_(); throw new Error('Módulo desconhecido: ' + name); }\n${catalog}\nreturn module.exports;\n}\n`);
 console.log('Campaigns.gs e Catalog.gs gerados.');

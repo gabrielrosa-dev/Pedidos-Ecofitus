@@ -1,0 +1,14 @@
+[
+  {
+    "email": "gabriel030203.gb@gmail.com",
+    "representativeId": "gabriel",
+    "salt": "Qv4YcMeuHQwkT42TKewlWw==",
+    "passwordHash": "BgTk8Iza4A+JOorN0q67ig6MEUJjID/VhpxUSM5OADagF9q36X/xu4L8f9dxrHbd+bRKtIi75FlKzmmrUOT0kw=="
+  },
+  {
+    "email": "vanderson79rosa@gmail.com",
+    "representativeId": "vanderson",
+    "salt": "zLeu3vq5sUUbP2qfwxY2DQ==",
+    "passwordHash": "aYDJ8N0nXDT84uzcprErFJcLHRNEb3hlQIMtXGj8WIXWI/guRychqMLvz44DMPYvkBWYxcmAjOuBuSxU72L8nQ=="
+  }
+]

@@ -20,6 +20,12 @@ const cart = new Map();
 const productSummaries = new Map();
 const selectedCampaigns = new Set();
 let activeCampaign;
+for (const term of window.EcofitusTerms.terms) {
+  const option = document.createElement('option');
+  option.value = term;
+  option.textContent = term;
+  $('terms').append(option);
+}
 let assignedRepresentative = null;
 try {
   assignedRepresentative = window.EcofitusRepresentatives.representativeFromSearch(location.search);

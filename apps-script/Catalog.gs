@@ -1,10 +1,73 @@
+function termsCore_() {
+const module = { exports: {} };
+'use strict';
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.EcofitusTerms = api;
+})(typeof globalThis === 'object' ? globalThis : this, function () {
+  const terms = [
+    '7 dias',
+    '7/14 dias',
+    '7/14/21 dias',
+    '7/14/21/28 dias',
+    '7/14/21/28/35 dias',
+    '7/14/21/28/35/42 dias',
+    '10/20/30/40/50 dias',
+    '10/20/30/40/50/60 dias',
+    '14 dias',
+    '14/21/28 dias',
+    '15/30/45 dias',
+    '15/30/45/60 dias',
+    '15/30/45/60/75 dias',
+    '20/30 dias',
+    '21 dias',
+    '21/28/35 dias',
+    '28 dias',
+    '28/35/42 dias',
+    '28/35/42/48/55/62 dias',
+    '30 dias',
+    '30/35 dias',
+    '30/35/42/49/56 dias',
+    '30/45 dias',
+    '30/45/60 dias',
+    '30/45/60/75 dias',
+    '30/45/60/75/90/105 dias',
+    '35 dias',
+    '35/42/49 dias',
+    '35/42/49/56 dias',
+    '45 dias',
+    '45/60 dias',
+    '45/60/75 dias',
+    '50 dias',
+    '60 dias',
+    '75 dias',
+    '90 dias',
+  ];
+
+  function normalizeTerm(value) {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  function isValidTerm(value) {
+    return terms.includes(normalizeTerm(value));
+  }
+
+  return { terms, normalizeTerm, isValidTerm };
+});
+
+return module.exports;
+}
 function catalogCore_() {
 const module = { exports: {} };
-function require(name) { if (name === './public/campaigns') return campaignCore_(); throw new Error('Módulo desconhecido: ' + name); }
+function require(name) { if (name === './public/campaigns') return campaignCore_(); if (name === './public/pricing') return pricingCore_(); if (name === './public/terms') return termsCore_(); throw new Error('Módulo desconhecido: ' + name); }
 'use strict';
 
 const { getCampaign, campaigns } = require('./public/campaigns');
-const MAX_AGE_MS = 10 * 60 * 1000;
+const { unitPrice } = require('./public/pricing');
+const { isValidTerm } = require('./public/terms');
+const MAX_AGE_MS = 90 * 1000;
 const MINIMUM_CENTS = 5000;
 
 function normalizeCatalog(raw) {
@@ -23,6 +86,27 @@ function normalizeCatalog(raw) {
         !Number.isInteger(price.multiple) || price.multiple < 1) {
       throw new Error(`Preço ou estoque inválido para ${product.id}.`);
     }
+    if (!product.promotions || !Array.isArray(product.promotions.sales) ||
+        Object.keys(product.promotions).some((key) => key !== 'sales' &&
+          product.promotions[key] != null && (!Array.isArray(product.promotions[key]) || product.promotions[key].length))) {
+      throw new Error(`Promoções inválidas ou não suportadas para ${product.id}.`);
+    }
+    const promotions = product.promotions.sales.map((sale) => {
+      if (!sale || !Number.isFinite(sale.finalPrice) || sale.finalPrice <= 0 ||
+          !Number.isSafeInteger(sale.begin) || !Number.isSafeInteger(sale.end) || sale.end <= sale.begin ||
+          !Number.isSafeInteger(sale.minQuantity) || sale.minQuantity < 1 ||
+          !Number.isSafeInteger(sale.maxQuantity) || sale.maxQuantity < sale.minQuantity ||
+          typeof sale.taxesSuccess !== 'boolean' ||
+          sale.promotionCartLimit !== 0 || sale.promotionClientLimit !== 0 || sale.promotionSellerLimit !== 0) {
+        throw new Error(`Condições promocionais inválidas ou não suportadas para ${product.id}.`);
+      }
+      return {
+        priceCents: Math.round(sale.finalPrice * 100), taxesConfirmed: sale.taxesSuccess,
+        begin: sale.begin, end: sale.end, minQuantity: sale.minQuantity, maxQuantity: sale.maxQuantity,
+        promotionId: Number.isSafeInteger(sale.promotionId) ? sale.promotionId : 0,
+        promotionTitle: typeof sale.promotionTitle === 'string' ? sale.promotionTitle : '',
+      };
+    });
     let image = '';
     if (product.hasImage && typeof product.imageURL === 'string') {
       const match = /^(https?):\/\/([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::(\d{1,5}))?(?:[/?#][^\s\\]*)?$/i.exec(product.imageURL);
@@ -35,10 +119,13 @@ function normalizeCatalog(raw) {
       ean: typeof product.ean === 'string' ? product.ean : '',
       maker: typeof product.maker === 'string' ? product.maker : '',
       image,
+      principle: typeof product.principle === 'string' ? product.principle : '',
       priceCents: Math.round(price.finalPrice * 100),
       taxesConfirmed: price.taxesSuccess === true,
+      promotions,
       stock: price.quantityAvailable,
       multiple: price.multiple,
+      boxQuantity: Number.isSafeInteger(product.boxQuantity) && product.boxQuantity > 0 ? product.boxQuantity : 0,
     };
   });
 }
@@ -59,7 +146,7 @@ function validCnpj(value) {
   return true;
 }
 
-function calculateOrder(input, catalog) {
+function calculateOrder(input, catalog, at = Date.now()) {
   if (!Array.isArray(input.items) || input.items.length > catalog.length ||
       !Array.isArray(input.campaigns) || input.campaigns.length > campaigns.length ||
       (!input.items.length && !input.campaigns.length)) {
@@ -84,14 +171,15 @@ function calculateOrder(input, catalog) {
     }
     seen.add(item.id);
     reserve(product, item.quantity);
-    total += product.priceCents * item.quantity;
-    return { id: product.id, name: product.name, ean: product.ean, quantity: item.quantity, priceCents: product.priceCents };
+    const price = unitPrice(product, item.quantity, at);
+    total += price.priceCents * item.quantity;
+    return { id: product.id, name: product.name, ean: product.ean, quantity: item.quantity, priceCents: price.priceCents };
   });
   const seenCampaigns = new Set();
   const selectedCampaigns = input.campaigns.map((id) => {
     if (typeof id !== 'string' || seenCampaigns.has(id)) throw new Error('Campanha inválida ou duplicada.');
     seenCampaigns.add(id);
-    const campaign = getCampaign(id, catalog);
+    const campaign = getCampaign(id, catalog, at);
     const lines = campaign.lines.map((line) => {
       reserve(line.product, line.quantity + line.bonus);
       return { id: line.product.id, name: line.product.name, ean: line.product.ean, quantity: line.quantity, bonus: line.bonus, priceCents: line.priceCents };
@@ -104,6 +192,25 @@ function calculateOrder(input, catalog) {
   return { items, campaigns: selectedCampaigns, totalCents: total };
 }
 
+function verifyPriceQuote(input, order) {
+  const quote = input && input.priceQuote;
+  const matches = (expected, actual) => Array.isArray(expected) && expected.length === actual.length &&
+    new Set(expected.map((entry) => entry && entry.id)).size === expected.length &&
+    actual.every((entry) => {
+      const quoted = expected.find((item) => item && item.id === entry.id);
+      return quoted && quoted.priceCents === entry.priceCents;
+    });
+  if (!quote || !matches(quote.items, order.items) || !Array.isArray(quote.campaigns) ||
+      quote.campaigns.length !== order.campaigns.length ||
+      new Set(quote.campaigns.map((entry) => entry && entry.id)).size !== quote.campaigns.length ||
+      !order.campaigns.every((campaign) => {
+        const quoted = quote.campaigns.find((entry) => entry && entry.id === campaign.id);
+        return quoted && matches(quoted.items, campaign.items);
+      })) {
+    throw new Error('Os preços mudaram ou não puderam ser confirmados. Atualize e revise o pedido.');
+  }
+}
+
 function buildOrder(input, catalog, updatedAt, companyName, now = Date.now()) {
   if (!updatedAt || now - updatedAt > MAX_AGE_MS || now < updatedAt) {
     throw new Error('Catálogo desatualizado. Aguarde a atualização para enviar o pedido.');
@@ -114,12 +221,15 @@ function buildOrder(input, catalog, updatedAt, companyName, now = Date.now()) {
   if (typeof companyName !== 'string' || !companyName.trim()) {
     throw new Error('Não foi possível confirmar a razão social.');
   }
-  if (typeof input.terms !== 'string' || input.terms.trim().length < 2 ||
-      input.terms.trim().length > 100 || /[\r\n]/.test(input.terms)) {
-    throw new Error('Informe o prazo liberado em até 100 caracteres.');
+  if (!isValidTerm(input.terms)) {
+    throw new Error('Selecione um prazo válido.');
   }
-  const result = calculateOrder({ ...input, campaigns: input.campaigns === undefined ? [] : input.campaigns }, catalog);
-  const formatLine = (item) => `${item.name.replace(/[\r\n]/g, ' ')} (${item.ean || item.id}) — ${item.quantity} x ${money(item.priceCents)} = ${money(item.quantity * item.priceCents)}${item.bonus ? ` + ${item.bonus} bonificadas` : ''}`;
+  const result = calculateOrder({ ...input, campaigns: input.campaigns === undefined ? [] : input.campaigns }, catalog, now);
+  const formatLine = (item) => {
+    const name = `${item.name.replace(/[\r\n]/g, ' ')} (${item.ean || item.id})`;
+    if (!item.quantity) return `${name} — ${item.bonus} bonificadas`;
+    return `${name} — ${item.quantity} x ${money(item.priceCents)} = ${money(item.quantity * item.priceCents)}${item.bonus ? ` + ${item.bonus} bonificadas` : ''}`;
+  };
   const lines = result.items.map(formatLine);
   for (const campaign of result.campaigns) {
     lines.push('', `*Campanha: ${campaign.title}*`, ...campaign.items.map(formatLine), `Benefício solicitado: ${campaign.benefit}`, `Subtotal campanha: ${money(campaign.totalCents)}`);
@@ -141,7 +251,7 @@ function money(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, MAX_AGE_MS, MINIMUM_CENTS };
+module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, verifyPriceQuote, MAX_AGE_MS, MINIMUM_CENTS, isValidTerm };
 
 return module.exports;
 }

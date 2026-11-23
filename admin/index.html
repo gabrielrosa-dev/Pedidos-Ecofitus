@@ -3,19 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Histórico de pedidos | Ecofitus</title>
+  <title>Área comercial | Ecofitus</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/extra.css">
+  <script src="/representatives.js" defer></script>
+  <script src="/representatives.js" defer></script>
+  <script src="/terms.js" defer></script>
   <script src="/admin.js" defer></script>
 </head>
-<body>
-  <div class="topline">ECOFITUS · ÁREA COMERCIAL</div>
+<body class="admin-page">
+  <div class="topline">ECOFITUS · ÁREA COMERCIAL RESTRITA</div>
   <main class="admin-main">
-    <h1>Histórico de pedidos</h1>
-    <p>Pedidos preparados para envio. O WhatsApp não informa se a mensagem foi enviada ou recebida.</p>
-    <button id="refresh" class="lookup-button" type="button">Atualizar histórico</button>
-    <p id="status" role="status">Carregando pedidos...</p>
-    <div id="orders"></div>
+    <header class="admin-heading">
+      <div><p class="eyebrow">HISTÓRICO PRIVADO</p><h1>Pedidos de <span id="representative-name">...</span></h1><p>Consulte, ajuste e recupere o espelho dos seus pedidos.</p></div>
+      <button id="refresh" class="lookup-button" type="button">Atualizar histórico</button>
+    </header>
+    <section class="admin-filters" aria-label="Filtro por período">
+      <label>Data inicial<input id="start-date" type="date"></label>
+      <label>Data final<input id="end-date" type="date"></label>
+      <button id="apply-filter" class="lookup-button" type="button">Pesquisar</button>
+      <button id="current-month" class="admin-secondary-button" type="button">Mês atual</button>
+      <div class="admin-total"><span>Total do período</span><strong id="period-total">R$ 0,00</strong></div>
+    </section>
+    <p id="status" class="admin-status" role="status">Carregando pedidos...</p>
+    <div id="orders" class="admin-orders"></div>
   </main>
+  <dialog id="edit-dialog" class="admin-edit-dialog" aria-labelledby="edit-title">
+    <form id="edit-form">
+      <div class="admin-edit-heading"><div><p class="eyebrow">EDIÇÃO DO PEDIDO</p><h2 id="edit-title">Editar pedido</h2></div><button id="close-edit" class="close" type="button" aria-label="Fechar edição">×</button></div>
+      <div class="admin-company-fields">
+        <label>Razão social<input id="edit-company" required maxlength="300"></label>
+        <label>Prazo<select id="edit-terms" required></select></label>
+      </div>
+      <div id="edit-items" class="admin-edit-items"></div>
+      <div class="admin-edit-footer"><strong>Total: <span id="edit-total">R$ 0,00</span></strong><button class="submit-button" type="submit">Salvar alterações</button></div>
+      <p id="edit-status" class="form-error" role="alert" hidden></p>
+    </form>
+  </dialog>
 </body>
 </html>

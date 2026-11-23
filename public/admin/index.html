@@ -10,6 +10,7 @@
   <script src="../config.js" defer></script>
   <script src="../transport.js" defer></script>
   <script src="../representatives.js" defer></script>
+  <script src="../terms.js" defer></script>
   <script src="./admin.js" defer></script>
 </head>
 <body class="admin-page">
@@ -47,7 +48,7 @@
       <div class="admin-edit-heading"><div><p class="eyebrow">EDIÇÃO DO PEDIDO</p><h2 id="edit-title">Editar pedido</h2></div><button id="close-edit" class="close" type="button" aria-label="Fechar edição">×</button></div>
       <div class="admin-company-fields">
         <label>Razão social<input id="edit-company" required maxlength="300"></label>
-        <label>Prazo<input id="edit-terms" required maxlength="100"></label>
+        <label>Prazo<select id="edit-terms" required></select></label>
       </div>
       <div id="edit-items" class="admin-edit-items"></div>
       <div class="admin-edit-footer"><strong>Total: <span id="edit-total">R$ 0,00</span></strong><button class="submit-button" type="submit">Salvar alterações</button></div>
