@@ -170,6 +170,7 @@
 .retry-button{display:block;margin:0 auto 20px;padding:10px 16px;border:1px solid #b8cfb9;border-radius:8px;background:#fff;color:#204c33;font-weight:700}
 .shop .submit-button,.shop .whatsapp-link{border-radius:10px;font-size:13px}
 .shop :focus-visible{outline:3px solid #76a783;outline-offset:3px}
+.shop .search input:focus-visible{outline:none}
 @media(max-width:650px){
   .shop{padding-top:58px}
   .shop .black-friday-banner{height:58px;gap:8px;padding:0 8px}
