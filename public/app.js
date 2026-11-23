@@ -161,14 +161,19 @@ function promotionRange(sale) {
     : `${sale.minQuantity} a ${sale.maxQuantity} un.`;
 }
 
-function productOfferLabel(product) {
-  const promotions = product.promotions.slice().sort(promotionOrder);
-  return promotions.length ? 'Ofertas' : 'Ver detalhes';
+function activeOffers(product) {
+  return product.promotions.slice().sort(promotionOrder).filter((sale) => {
+    const minimum = Math.max(product.multiple, Math.ceil(sale.minQuantity / product.multiple) * product.multiple);
+    const available = updatedAt >= sale.begin && updatedAt < sale.end &&
+      minimum <= sale.maxQuantity && minimum <= product.stock;
+    const hasDiscount = sale.priceCents < product.priceCents;
+    const hasCampaign = typeof sale.promotionTitle === 'string' && sale.promotionTitle.trim().length > 0;
+    return available && (hasDiscount || hasCampaign);
+  });
 }
 
 function activeDiscounts(product) {
-  return product.promotions.slice().sort(promotionOrder).filter((sale) =>
-    updatedAt >= sale.begin && updatedAt < sale.end && sale.priceCents < product.priceCents);
+  return activeOffers(product).filter((sale) => sale.priceCents < product.priceCents);
 }
 
 function offerReason(product, sale) {
@@ -230,13 +235,12 @@ function renderProductOffers(product) {
   $('product-dialog-title').textContent = product.name;
   details.append(element('div', 'offers-banner'));
   const banner = details.children[details.children.length - 1];
-  for (const sale of product.promotions.slice().sort(promotionOrder)) {
-    const state = updatedAt < sale.begin ? 'Programada' : updatedAt >= sale.end ? 'Encerrada' : 'Ativa';
+  for (const sale of activeOffers(product)) {
     const row = element('div', 'offers-banner-row');
     row.append(
-      element('span', 'offers-banner-quantity', promotionRange(sale)),
+      element('span', 'offers-banner-quantity', `${sale.promotionTitle ? `${sale.promotionTitle} · ` : ''}${promotionRange(sale)}`),
       element('strong', 'offers-banner-price', `${money(sale.priceCents)}/un.`),
-      element('small', 'offers-banner-state', state)
+      element('small', 'offers-banner-state', 'Ativa')
     );
     banner.append(row);
   }
@@ -320,14 +324,15 @@ function renderProducts() {
     info.append(productName);
     info.append(element('p', 'product-code', `Código: ${product.ean || product.id}`));
     if (product.multiple > 1) info.append(element('p', 'product-multiple', `Venda em múltiplos de ${product.multiple}`));
-    const offerBanner = element('button', 'product-offer-banner', productOfferLabel(product));
-    offerBanner.type = 'button';
-    offerBanner.addEventListener('click', () => {
-      if (product.promotions.length) renderProductOffers(product);
-      else renderProductDetails(product);
-      $('product-dialog').showModal();
-    });
-    info.append(offerBanner);
+    if (activeOffers(product).length) {
+      const offerBanner = element('button', 'product-offer-banner', 'Ofertas');
+      offerBanner.type = 'button';
+      offerBanner.addEventListener('click', () => {
+        renderProductOffers(product);
+        $('product-dialog').showModal();
+      });
+      info.append(offerBanner);
+    }
     const bottom = element('div', 'product-bottom');
     const price = element('div');
     const priceLabel = element('span', 'price-label');

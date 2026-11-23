@@ -289,6 +289,33 @@ test('botão de ofertas abre um banner apenas com quantidades e preços', async 
   assert.equal(get('product-dialog-eyebrow').textContent, 'OFERTAS DO PRODUTO');
 });
 
+test('oculta ofertas sem desconto real, mas mantém campanha identificada', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  products[0].promotions = [{
+    priceCents: products[0].priceCents, taxesConfirmed: true, begin: 100, end: 500,
+    minQuantity: 1, maxQuantity: 9999,
+  }];
+  snapshot.updatedAt++;
+  await context.loadCatalog();
+  const findOfferButton = () => {
+    const card = get('products').children.find((entry) => entry.children.some((node) =>
+      node.className === 'product-info' && node.children.some((child) =>
+        child.className === 'product-name' && child.textContent === products[0].name)));
+    return card.children.find((node) => node.className === 'product-info').children
+      .find((child) => child.className === 'product-offer-banner');
+  };
+  assert.equal(findOfferButton(), undefined);
+
+  products[0].promotions[0].promotionTitle = 'Campanha especial';
+  snapshot.updatedAt++;
+  await context.loadCatalog();
+  const button = findOfferButton();
+  assert.equal(button.textContent, 'Ofertas');
+  button.dispatch('click');
+  const offer = get('product-details').children[0].children[0];
+  assert.match(offer.children[0].textContent, /Campanha especial/);
+});
+
 test('divergência de preço atualiza o catálogo e pede revisão sem liberar WhatsApp', async () => {
   const { context, get, products, snapshot } = await storefront();
   context.addProduct(products[0]);
