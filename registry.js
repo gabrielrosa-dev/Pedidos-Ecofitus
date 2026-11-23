@@ -17,7 +17,7 @@ async function lookupCompany(value) {
   if (response.status === 404) throw new Error('CNPJ não encontrado na BrasilAPI.');
   if (!response.ok) {
     console.error('BrasilAPI retornou HTTP', response.status);
-    throw new Error('Consulta de CNPJ indisponível. Tente novamente.');
+    throw new Error(`Consulta de CNPJ temporariamente indisponível (BrasilAPI HTTP ${response.status}). Tente novamente.`);
   }
   let data;
   try { data = await response.json(); } catch {

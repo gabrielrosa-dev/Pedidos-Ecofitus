@@ -19,7 +19,46 @@ let lookupPromise;
 const cart = new Map();
 const productSummaries = new Map();
 const selectedCampaigns = new Set();
+const cartStorageKey = 'ecofitus-cart-v1';
 let activeCampaign;
+
+function restoreCart() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const saved = localStorage.getItem(cartStorageKey);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    if (!data || !Array.isArray(data.items) || !Array.isArray(data.campaigns)) {
+      throw new Error('Dados do carrinho salvos em formato inválido.');
+    }
+    for (const entry of data.items) {
+      if (Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' &&
+          entry[0] && Number.isSafeInteger(entry[1]) && entry[1] > 0) {
+        cart.set(entry[0], entry[1]);
+      }
+    }
+    for (const id of data.campaigns) {
+      if (typeof id === 'string' && id) selectedCampaigns.add(id);
+    }
+  } catch (error) {
+    console.warn('Não foi possível restaurar o carrinho salvo:', error.message);
+  }
+}
+
+function persistCart() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(cartStorageKey, JSON.stringify({
+      items: Array.from(cart),
+      campaigns: Array.from(selectedCampaigns),
+    }));
+  } catch (error) {
+    console.warn('Não foi possível salvar o carrinho:', error.message);
+  }
+}
+
+restoreCart();
+
 for (const term of window.EcofitusTerms.terms) {
   const option = document.createElement('option');
   option.value = term;
@@ -392,6 +431,7 @@ function renderProducts() {
 }
 
 function renderCart() {
+  persistCart();
   const products = new Map(catalog.map((p) => [p.id, p]));
   let total = 0;
   let count = 0;

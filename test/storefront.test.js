@@ -29,11 +29,15 @@ class Element {
   dispatch(type) { this.listeners[type]({ target: this }); }
 }
 
-async function storefront() {
+async function storefront(storage = new Map()) {
   const elements = new Map();
   const get = (id) => {
     if (!elements.has(id)) elements.set(id, new Element());
     return elements.get(id);
+  };
+  const localStorage = {
+    getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+    setItem(key, value) { storage.set(key, String(value)); },
   };
   get('sort').value = 'name';
   const products = [
@@ -47,7 +51,7 @@ async function storefront() {
   };
   const context = vm.createContext({
     location: { search: '?representante=gabriel' },
-    document, console, crypto: { randomUUID: () => 'test-id' },
+    document, console, crypto: { randomUUID: () => 'test-id' }, localStorage,
     window: {
       ecofitusRequest: async () => snapshot,
       EcofitusCampaigns: { campaigns: [] },
@@ -61,6 +65,19 @@ async function storefront() {
   await new Promise((resolve) => setImmediate(resolve));
   return { context, get, products, snapshot };
 }
+
+test('carrinho permanece após recarregar e atualizar o catálogo', async () => {
+  const storage = new Map();
+  const first = await storefront(storage);
+  first.context.addProduct(first.products[0]);
+  assert.equal(first.get('cart-count').textContent, '3');
+
+  const reloaded = await storefront(storage);
+  assert.equal(reloaded.get('cart-count').textContent, '3');
+  assert.equal(reloaded.get('cart-items').children[0].children[1].children[1].value, '3');
+  await reloaded.context.loadCatalog();
+  assert.equal(reloaded.get('cart-count').textContent, '3');
+});
 
 test('busca ignora acentos e encontra ID; filtro mantém apenas disponíveis', async () => {
   const { get } = await storefront();

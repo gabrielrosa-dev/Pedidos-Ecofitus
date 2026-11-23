@@ -10,6 +10,7 @@ function fakeAppsScript() {
   const cache = new Map();
   const sheets = new Map();
   let catalogRequests = 0;
+  let companyResponseCode = 200;
   const product = { id: 'b12', ean: '7896920307922', name: 'B12', hasImage: true, imageURL: 'https://example.com/product.png', promotions: { sales: [] }, prices: [{ finalPrice: 24.54, quantityAvailable: 500, multiple: 1 }] };
   const context = vm.createContext({
     console, Date, JSON, Number, String, Array, Math, Error, encodeURIComponent,
@@ -18,7 +19,7 @@ function fakeAppsScript() {
     }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     UrlFetchApp: { fetch: (url) => {
-      if (url.includes('brasilapi')) return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ cnpj: '23624691000108', razao_social: 'Empresa teste' }) };
+      if (url.includes('brasilapi')) return { getResponseCode: () => companyResponseCode, getContentText: () => JSON.stringify({ cnpj: '23624691000108', razao_social: 'Empresa teste' }) };
       catalogRequests++;
       return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ pagina: 0, totalPaginas: 1, products: [product] }) };
     } },
@@ -45,8 +46,21 @@ function fakeAppsScript() {
     if (file === 'Code.gs') source = source.replace("'COLE_O_ID_DA_PLANILHA_AQUI';", "'planilha-teste';").replace("SPREADSHEET_ID === 'COLE_O_ID_DA_PLANILHA_AQUI'", "SPREADSHEET_ID === 'não-configurada'");
     vm.runInContext(source, context);
   }
-  return { context, cache, sheets, product, getCatalogRequests: () => catalogRequests };
+  return { context, cache, sheets, product, getCatalogRequests: () => catalogRequests,
+    setCompanyResponseCode: (code) => { companyResponseCode = code; } };
 }
+
+test('Apps Script distingue CNPJ inexistente de indisponibilidade da BrasilAPI', () => {
+  const app = fakeAppsScript();
+  const request = () => app.context.doPost({ parameter: {
+    nonce: '68b36a0a-27a7-4eaf-870b-231e6cfef229',
+    payload: JSON.stringify({ action: 'company', cnpj: '23624691000108' }),
+  } }).html;
+  app.setCompanyResponseCode(503);
+  assert.match(request(), /Consulta de CNPJ temporariamente indisponível \(BrasilAPI HTTP 503\)/);
+  app.setCompanyResponseCode(404);
+  assert.match(request(), /CNPJ não encontrado na BrasilAPI/);
+});
 
 test('Apps Script atualiza catálogo e salva pedido idempotente na planilha', () => {
   const app = fakeAppsScript();

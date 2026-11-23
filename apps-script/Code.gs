@@ -141,7 +141,9 @@ function lookupCompany_(value) {
     headers: { 'User-Agent': 'PedidosEcofitus/1.0 (CNPJ lookup)' },
     muteHttpExceptions: true,
   });
-  if (response.getResponseCode() !== 200) throw new Error('Consulta de CNPJ indisponível ou CNPJ não encontrado.');
+  const status = response.getResponseCode();
+  if (status === 404) throw new Error('CNPJ não encontrado na BrasilAPI.');
+  if (status !== 200) throw new Error(`Consulta de CNPJ temporariamente indisponível (BrasilAPI HTTP ${status}). Tente novamente.`);
   const data = JSON.parse(response.getContentText('UTF-8'));
   if (data.cnpj !== cnpj || typeof data.razao_social !== 'string' || !data.razao_social.trim()) {
     throw new Error('A consulta não retornou uma razão social válida.');

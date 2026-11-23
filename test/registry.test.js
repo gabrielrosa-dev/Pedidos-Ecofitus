@@ -13,6 +13,8 @@ test('consulta CNPJ e valida razão social retornada', async (t) => {
   assert.deepEqual(await lookupCompany('23.624.691/0001-08'), { cnpj: '23624691000108', name: 'Empresa Teste' });
   global.fetch = async () => ({ ok: false, status: 404 });
   await assert.rejects(lookupCompany('23624691000108'), /não encontrado/);
+  global.fetch = async () => ({ ok: false, status: 503 });
+  await assert.rejects(lookupCompany('23624691000108'), /temporariamente indisponível.*HTTP 503/);
   global.fetch = async () => ({ ok: true, json: async () => ({ cnpj: '00000000000000', razao_social: 'Outra' }) });
   await assert.rejects(lookupCompany('23624691000108'), /razão social válida/);
   await assert.rejects(lookupCompany('11111111111111'), /CNPJ válido/);
