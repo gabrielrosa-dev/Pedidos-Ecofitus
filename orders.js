@@ -93,7 +93,46 @@ function validateEditedOrder(order, input) {
       quantity: item.quantity, priceCents: item.priceCents,
     };
   });
-  const campaigns = Array.isArray(order.campaigns) ? order.campaigns : [];
+  let campaigns = Array.isArray(order.campaigns) ? order.campaigns : [];
+  if (input.campaigns !== undefined) {
+    if (!Array.isArray(input.campaigns) || input.campaigns.length > 20) {
+      throw new Error('As campanhas do pedido são inválidas.');
+    }
+    const campaignIds = new Set();
+    campaigns = input.campaigns.map((campaign) => {
+      if (!campaign || typeof campaign.id !== 'string' || campaignIds.has(campaign.id) ||
+          typeof campaign.title !== 'string' || !campaign.title.trim() || campaign.title.length > 300 ||
+          typeof campaign.benefit !== 'string' || campaign.benefit.length > 1000 ||
+          !Array.isArray(campaign.items) || campaign.items.length > 50) {
+        throw new Error('Revise o título e os produtos das campanhas.');
+      }
+      campaignIds.add(campaign.id);
+      const itemIds = new Set();
+      let totalCents = 0;
+      const campaignItems = campaign.items.map((item) => {
+        if (!item || typeof item.id !== 'string' || itemIds.has(item.id) || item.id.length > 100 ||
+            typeof item.name !== 'string' || !item.name.trim() || item.name.length > 300 ||
+            typeof item.ean !== 'string' || item.ean.length > 100 ||
+            !Number.isSafeInteger(item.quantity) || item.quantity < 0 ||
+            !Number.isSafeInteger(item.bonus) || item.bonus < 0 ||
+            (!item.quantity && !item.bonus) ||
+            !Number.isSafeInteger(item.priceCents) || item.priceCents < 0) {
+          throw new Error('Revise quantidade, bonificação e valor dos itens da campanha.');
+        }
+        itemIds.add(item.id);
+        totalCents += item.quantity * item.priceCents;
+        return {
+          id: item.id, name: item.name.trim().replace(/[\r\n]/g, ' '),
+          ean: item.ean, quantity: item.quantity, bonus: item.bonus, priceCents: item.priceCents,
+        };
+      });
+      if (!campaignItems.length || !Number.isSafeInteger(totalCents)) throw new Error('Valor da campanha inválido.');
+      return {
+        id: campaign.id, title: campaign.title.trim(), benefit: campaign.benefit.trim(),
+        items: campaignItems, totalCents,
+      };
+    });
+  }
   if (!items.length && !campaigns.length) throw new Error('O pedido deve conter ao menos um produto.');
   const totalCents = items.reduce((total, item) => total + item.quantity * item.priceCents, 0) +
     campaigns.reduce((total, campaign) => total + campaign.totalCents, 0);

@@ -146,15 +146,21 @@ test('Apps Script autentica representante e isola, filtra e edita histórico', (
   const listed = request('adminList', { start: '2026-11-01', end: '2026-11-30' });
   assert.equal(listed.data.orders.length, 1);
   assert.equal(listed.data.totalCents, 6000);
+  assert.equal(listed.data.commissionCents, 600);
   const changed = request('adminUpdate', {
     orderId: order.id,
     changes: {
       companyName: 'Empresa nova', terms: '30 dias',
       items: [{ id: 'b12', ean: '789', name: 'Produto novo', quantity: 3, priceCents: 2500 }],
+      campaigns: [{
+        id: 'campanha-teste', title: 'Campanha teste', benefit: 'Brinde sujeito à confirmação',
+        items: [{ id: 'b12', ean: '789', name: 'B12', quantity: 2, bonus: 1, priceCents: 2500 }],
+      }],
     },
   });
-  assert.equal(changed.data.order.totalCents, 7500);
+  assert.equal(changed.data.order.totalCents, 12500);
   assert.match(changed.data.order.message, /Produto novo/);
+  assert.equal(changed.data.order.campaigns[0].totalCents, 5000);
   const denied = responseJson(app.context.doPost({
     parameter: {
       nonce: '68b36a0a-27a7-4eaf-870b-231e6cfef229',

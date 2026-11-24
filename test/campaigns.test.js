@@ -50,10 +50,11 @@ test('pedido e histórico recebem campanha e valores calculados no servidor', ()
 test('campanhas usam o preço promocional da quantidade paga', () => {
   const now = Date.now();
   const discounted = products.map((p) => p.id === 'b12' ? { ...p, promotions: [
-    { priceCents: 2000, taxesConfirmed: true, begin: now - 1000, end: now + 1000, minQuantity: 30, maxQuantity: 40 },
+    { priceCents: 2390, taxesConfirmed: true, begin: now - 1000, end: now + 1000, minQuantity: 16, maxQuantity: 40 },
   ] } : p);
-  assert.equal(getCampaign('barril-chopp', discounted, now).totalCents, 72000);
-  assert.equal(getCampaign('show-brindes', discounted, now).totalCents, 39264);
+  assert.equal(getCampaign('barril-chopp', discounted, now).totalCents, 86040);
+  assert.equal(getCampaign('show-brindes', discounted, now).totalCents, 38240);
+  assert.equal(getCampaign('show-brindes', discounted, now).lines[0].priceCents, 2390);
 });
 
 test('confirma os preços individuais das campanhas antes de preparar', () => {

@@ -209,10 +209,12 @@ const server = http.createServer(async (req, res) => {
         const date = order.createdAt.slice(0, 10);
         return (!start || date >= start) && (!end || date <= end);
       });
+      const totalCents = filtered.reduce((total, order) => total + order.totalCents, 0);
       return sendJson(res, 200, {
         representative: { id: account.representativeId, name: getRepresentative(account.representativeId).name },
         orders: filtered,
-        totalCents: filtered.reduce((total, order) => total + order.totalCents, 0),
+        totalCents,
+        commissionCents: Math.round(totalCents * 10 / 100),
       });
     }
     if (req.method === 'GET' && url.pathname === '/api/admin/me') {

@@ -10,6 +10,8 @@
   <script src="../config.js" defer></script>
   <script src="../transport.js" defer></script>
   <script src="../representatives.js" defer></script>
+  <script src="../pricing.js" defer></script>
+  <script src="../campaigns.js" defer></script>
   <script src="../terms.js" defer></script>
   <script src="./admin.js" defer></script>
 </head>
@@ -39,6 +41,7 @@
         <button id="apply-filter" class="lookup-button" type="button">Pesquisar</button>
         <button id="current-month" class="admin-secondary-button" type="button">Mês atual</button>
         <div class="admin-total"><span>Total do período</span><strong id="period-total">R$ 0,00</strong></div>
+        <div class="admin-total"><span>Comissão (10%)</span><strong id="period-commission">R$ 0,00</strong></div>
       </section>
       <div class="admin-toolbar"><p id="status" class="admin-status" role="status">Carregando pedidos...</p><button id="refresh" class="lookup-button" type="button">Atualizar histórico</button></div>
       <div id="orders" class="admin-orders"></div>
@@ -52,6 +55,16 @@
         <label>Prazo<select id="edit-terms" required></select></label>
       </div>
       <div id="edit-items" class="admin-edit-items"></div>
+      <section class="admin-edit-campaigns">
+        <div class="admin-campaign-heading">
+          <h3>Campanhas</h3>
+          <div>
+            <select id="campaign-to-add" aria-label="Campanha para adicionar"></select>
+            <button id="add-campaign" class="lookup-button" type="button">Adicionar campanha</button>
+          </div>
+        </div>
+        <div id="edit-campaigns" class="admin-campaigns"></div>
+      </section>
       <div class="admin-edit-footer"><strong>Total: <span id="edit-total">R$ 0,00</span></strong><button class="submit-button" type="submit">Salvar alterações</button></div>
       <p id="edit-status" class="form-error" role="alert" hidden></p>
     </form>
