@@ -12,19 +12,19 @@ async function lookupCompany(value) {
     });
   } catch (error) {
     console.error('Falha na consulta BrasilAPI:', error.message);
-    throw new Error('Não foi possível consultar o CNPJ. Tente novamente.');
+    return { cnpj, name: 'Razão social não localizada' };
   }
-  if (response.status === 404) throw new Error('CNPJ não encontrado na BrasilAPI.');
+  if (response.status === 404) return { cnpj, name: 'Razão social não localizada' };
   if (!response.ok) {
     console.error('BrasilAPI retornou HTTP', response.status);
-    throw new Error(`Consulta de CNPJ temporariamente indisponível (BrasilAPI HTTP ${response.status}). Tente novamente.`);
+    return { cnpj, name: 'Razão social não localizada' };
   }
   let data;
   try { data = await response.json(); } catch {
-    throw new Error('Resposta inválida da consulta de CNPJ.');
+    return { cnpj, name: 'Razão social não localizada' };
   }
   if (data.cnpj !== cnpj || typeof data.razao_social !== 'string' || !data.razao_social.trim()) {
-    throw new Error('A consulta não retornou uma razão social válida.');
+    return { cnpj, name: 'Razão social não localizada' };
   }
   return { cnpj, name: data.razao_social.trim().replace(/[\r\n]/g, ' ') };
 }

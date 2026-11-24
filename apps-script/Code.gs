@@ -137,16 +137,24 @@ function catalog_(forceRefresh = false) {
 function lookupCompany_(value) {
   if (typeof value !== 'string' || !catalogCore_().validCnpj(value)) throw new Error('Informe um CNPJ válido.');
   const cnpj = value.replace(/\D/g, '');
-  const response = UrlFetchApp.fetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj, {
-    headers: { 'User-Agent': 'PedidosEcofitus/1.0 (CNPJ lookup)' },
-    muteHttpExceptions: true,
-  });
+  let response;
+  try {
+    response = UrlFetchApp.fetch('https://brasilapi.com.br/api/cnpj/v1/' + cnpj, {
+      headers: { 'User-Agent': 'PedidosEcofitus/1.0 (CNPJ lookup)' },
+      muteHttpExceptions: true,
+    });
+  } catch (error) {
+    console.error('Falha na consulta BrasilAPI: ' + error.message);
+    return { cnpj, name: 'Razão social não localizada' };
+  }
   const status = response.getResponseCode();
-  if (status === 404) throw new Error('CNPJ não encontrado na BrasilAPI.');
-  if (status !== 200) throw new Error(`Consulta de CNPJ temporariamente indisponível (BrasilAPI HTTP ${status}). Tente novamente.`);
-  const data = JSON.parse(response.getContentText('UTF-8'));
+  if (status === 404 || status !== 200) return { cnpj, name: 'Razão social não localizada' };
+  let data;
+  try { data = JSON.parse(response.getContentText('UTF-8')); } catch (error) {
+    return { cnpj, name: 'Razão social não localizada' };
+  }
   if (data.cnpj !== cnpj || typeof data.razao_social !== 'string' || !data.razao_social.trim()) {
-    throw new Error('A consulta não retornou uma razão social válida.');
+    return { cnpj, name: 'Razão social não localizada' };
   }
   return { cnpj, name: data.razao_social.trim().replace(/[\r\n]/g, ' ') };
 }

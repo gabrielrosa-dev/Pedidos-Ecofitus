@@ -50,16 +50,16 @@ function fakeAppsScript() {
     setCompanyResponseCode: (code) => { companyResponseCode = code; } };
 }
 
-test('Apps Script distingue CNPJ inexistente de indisponibilidade da BrasilAPI', () => {
+test('Apps Script usa fallback quando a BrasilAPI não encontra ou não disponibiliza a razão social', () => {
   const app = fakeAppsScript();
   const request = () => app.context.doPost({ parameter: {
     nonce: '68b36a0a-27a7-4eaf-870b-231e6cfef229',
     payload: JSON.stringify({ action: 'company', cnpj: '23624691000108' }),
   } }).html;
   app.setCompanyResponseCode(503);
-  assert.match(request(), /Consulta de CNPJ temporariamente indisponível \(BrasilAPI HTTP 503\)/);
+  assert.match(request(), /Razão social não localizada/);
   app.setCompanyResponseCode(404);
-  assert.match(request(), /CNPJ não encontrado na BrasilAPI/);
+  assert.match(request(), /Razão social não localizada/);
 });
 
 test('Apps Script atualiza catálogo e salva pedido idempotente na planilha', () => {
@@ -82,6 +82,7 @@ test('Apps Script atualiza catálogo e salva pedido idempotente na planilha', ()
   const order = { id, representativeId: 'gabriel', cnpj: '23624691000108', terms: '28 dias', items: [], campaigns: ['b12-pix'],
     priceQuote: { items: [], campaigns: [{ id: 'b12-pix', items: [{ id: 'b12', priceCents: 2454 }] }] } };
   const request = { parameter: { nonce: '68b36a0a-27a7-4eaf-870b-231e6cfef229', payload: JSON.stringify({ action: 'order', order }) } };
+  app.setCompanyResponseCode(503);
   const result = app.context.doPost(request).html;
   assert.match(result, /wa\.me/);
   assert.equal(app.sheets.get('Pedidos').rows.length, 2);

@@ -669,7 +669,7 @@ function lookupCompany(cnpj, version) {
       $('company-status').textContent = `Razão social: ${result.name} (BrasilAPI)`;
       return true;
     } catch (error) {
-      if (version === lookupVersion) $('company-status').textContent = `${error.message} Tente preparar o pedido para consultar novamente.`;
+      if (version === lookupVersion) $('company-status').textContent = `${error.message} O pedido poderá ser preparado mesmo assim.`;
       return false;
     }
   })();
@@ -691,12 +691,12 @@ $('order-form').addEventListener('submit', async (event) => {
   try {
     if (!assignedRepresentative) throw new Error('Acesse o catálogo pelo link enviado pelo seu representante.');
     const cnpj = $('cnpj').value.replace(/\D/g, '');
+    if (cnpj.length !== 14) throw new Error('Informe um CNPJ completo.');
     if (verifiedCnpj !== cnpj) {
-      if (cnpj.length !== 14) throw new Error('Informe um CNPJ completo.');
       clearTimeout(lookupTimer);
-      if (!await lookupCompany(cnpj, lookupVersion)) throw new Error('Não foi possível confirmar a razão social. Verifique a mensagem abaixo do CNPJ.');
-      if (submittedVersion !== orderVersion) throw new Error('Os dados foram alterados. Prepare o pedido novamente.');
+      await lookupCompany(cnpj, lookupVersion);
     }
+    if (submittedVersion !== orderVersion) throw new Error('Os dados foram alterados. Prepare o pedido novamente.');
     const products = new Map(catalog.map((product) => [product.id, product]));
     const priceQuote = {
       items: Array.from(cart, ([id, quantity]) => ({
