@@ -725,6 +725,10 @@ $('order-form').addEventListener('submit', async (event) => {
     $('whatsapp-link').href = result.url;
     $('whatsapp-link').hidden = false;
     $('whatsapp-link').focus();
+    cart.clear();
+    selectedCampaigns.clear();
+    orderId = crypto.randomUUID();
+    persistCart();
   } catch (error) {
     if (orderRequested) {
       if (catalogRequestInFlight) await catalogRequestInFlight;
