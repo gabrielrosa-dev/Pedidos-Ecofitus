@@ -149,8 +149,6 @@ function element(tag, className, text) {
 function invalidateOrder() {
   orderVersion++;
   orderId = crypto.randomUUID();
-  $('whatsapp-link').hidden = true;
-  $('whatsapp-link').removeAttribute('href');
 }
 
 function setCartOpen(open) {
@@ -683,7 +681,6 @@ $('order-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (submitting) return;
   submitting = true;
-  $('whatsapp-link').hidden = true;
   $('order-error').hidden = true;
   const submittedVersion = orderVersion;
   let orderRequested = false;
@@ -722,9 +719,7 @@ $('order-form').addEventListener('submit', async (event) => {
     if (submittedVersion !== orderVersion) {
       throw new Error('O pedido anterior foi salvo no histórico, mas os dados foram alterados. Prepare o pedido atualizado novamente.');
     }
-    $('whatsapp-link').href = result.url;
-    $('whatsapp-link').hidden = false;
-    $('whatsapp-link').focus();
+    window.open(result.url, '_blank', 'noopener,noreferrer');
     cart.clear();
     selectedCampaigns.clear();
     orderId = crypto.randomUUID();
