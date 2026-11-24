@@ -684,11 +684,18 @@ $('order-form').addEventListener('submit', async (event) => {
   $('order-error').hidden = true;
   const submittedVersion = orderVersion;
   let orderRequested = false;
+  let whatsappWindow = null;
   $('submit-order').disabled = true;
   try {
     if (!assignedRepresentative) throw new Error('Acesse o catálogo pelo link enviado pelo seu representante.');
     const cnpj = $('cnpj').value.replace(/\D/g, '');
     if (cnpj.length !== 14) throw new Error('Informe um CNPJ completo.');
+    try {
+      whatsappWindow = window.open('about:blank', '_blank');
+      if (whatsappWindow) whatsappWindow.opener = null;
+    } catch (error) {
+      console.warn('Não foi possível abrir a janela do WhatsApp:', error.message);
+    }
     if (verifiedCnpj !== cnpj) {
       clearTimeout(lookupTimer);
       await lookupCompany(cnpj, lookupVersion);
@@ -719,12 +726,27 @@ $('order-form').addEventListener('submit', async (event) => {
     if (submittedVersion !== orderVersion) {
       throw new Error('O pedido anterior foi salvo no histórico, mas os dados foram alterados. Prepare o pedido atualizado novamente.');
     }
-    window.open(result.url, '_blank', 'noopener,noreferrer');
+    if (typeof result.url !== 'string' || !/^https:\/\/wa\.me\/[1-9]\d{9,14}\?text=/.test(result.url)) {
+      throw new Error('O pedido foi salvo, mas o link do WhatsApp é inválido. Entre em contato com a equipe comercial.');
+    }
+    $('whatsapp-link').href = result.url;
+    $('whatsapp-link').hidden = false;
+    $('whatsapp-status').hidden = false;
+    if (whatsappWindow && !whatsappWindow.closed) {
+      try {
+        whatsappWindow.location.replace(result.url);
+      } catch (error) {
+        console.warn('Não foi possível abrir o WhatsApp:', error.message);
+        whatsappWindow.close();
+      }
+    }
+    whatsappWindow = null;
     cart.clear();
     selectedCampaigns.clear();
     orderId = crypto.randomUUID();
     persistCart();
   } catch (error) {
+    if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
     if (orderRequested) {
       if (catalogRequestInFlight) await catalogRequestInFlight;
       await loadCatalog();

@@ -40,6 +40,8 @@ async function storefront(storage = new Map()) {
     setItem(key, value) { storage.set(key, String(value)); },
   };
   get('sort').value = 'name';
+  get('whatsapp-link').hidden = true;
+  get('whatsapp-status').hidden = true;
   const products = [
     { id: 'abc123', name: 'Óleo de teste', ean: '789000', maker: 'Ecofitus', image: 'https://example.com/oil.png', priceCents: 3000, taxesConfirmed: true, stock: 12, multiple: 3, promotions: [] },
     { id: 'out', name: 'Indisponível', ean: '789001', maker: 'Ecofitus', priceCents: 1000, taxesConfirmed: true, stock: 0, multiple: 1, promotions: [] },
@@ -54,6 +56,7 @@ async function storefront(storage = new Map()) {
     document, console, crypto: { randomUUID: () => 'test-id' }, localStorage,
     window: {
       ecofitusRequest: async () => snapshot,
+      open: () => null,
       EcofitusCampaigns: { campaigns: [] },
       EcofitusPricing: require('../public/pricing'),
       EcofitusRepresentatives: require('../public/representatives'),
@@ -237,7 +240,7 @@ test('preços promocionais acompanham a quantidade e são enviados na cotação'
   let submitted;
   context.window.ecofitusRequest = async (path, body) => {
     if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
-    if (path === '/api/order') { submitted = body; return { url: 'https://example.com' }; }
+    if (path === '/api/order') { submitted = body; return { url: 'https://wa.me/5541995922369?text=pedido' }; }
     return snapshot;
   };
   get('cnpj').value = '12345678901234';
@@ -246,7 +249,120 @@ test('preços promocionais acompanham a quantidade e são enviados na cotação'
   assert.equal(submitted.priceQuote.items[0].priceCents, 2000);
   assert.equal(submitted.priceQuote.campaigns.length, 0);
   assert.equal(get('whatsapp-link').hidden, false);
+  assert.equal(get('whatsapp-link').href, 'https://wa.me/5541995922369?text=pedido');
+  assert.equal(get('whatsapp-status').hidden, false);
+  assert.equal(get('cart-count').textContent, '0');
   assert.equal(submitted.representativeId, 'gabriel');
+});
+
+test('abre a janela no clique e navega somente após salvar o pedido', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  context.addProduct(products[0]);
+  let resolveOrder;
+  let opened = false;
+  const popup = { closed: false, location: { replace(url) { this.url = url; } }, close() { this.closed = true; } };
+  context.window.open = (url, target) => {
+    opened = true;
+    assert.equal(url, 'about:blank');
+    assert.equal(target, '_blank');
+    return popup;
+  };
+  context.window.ecofitusRequest = async (path) => {
+    if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
+    if (path === '/api/order') return new Promise((resolve) => { resolveOrder = resolve; });
+    return snapshot;
+  };
+  get('cnpj').value = '12345678901234';
+  const submission = get('order-form').listeners.submit({ preventDefault() {} });
+  assert.equal(opened, true);
+  assert.equal(popup.opener, null);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(popup.location.url, undefined);
+  resolveOrder({ url: 'https://wa.me/5541995922369?text=pedido' });
+  await submission;
+  assert.equal(popup.location.url, 'https://wa.me/5541995922369?text=pedido');
+  assert.equal(get('whatsapp-link').hidden, false);
+});
+
+test('fecha janela e preserva carrinho se o pedido não for salvo', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  context.addProduct(products[0]);
+  const popup = { closed: false, close() { this.closed = true; } };
+  context.window.open = () => popup;
+  context.window.ecofitusRequest = async (path) => {
+    if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
+    if (path === '/api/order') throw new Error('Falha ao salvar pedido.');
+    return snapshot;
+  };
+  get('cnpj').value = '12345678901234';
+  await get('order-form').listeners.submit({ preventDefault() {} });
+  assert.equal(popup.closed, true);
+  assert.equal(get('cart-count').textContent, '3');
+  assert.equal(get('whatsapp-link').hidden, true);
+  assert.match(get('order-error').textContent, /Falha ao salvar/);
+});
+
+test('mantém link de recuperação quando a navegação da janela falha', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  context.addProduct(products[0]);
+  const popup = {
+    closed: false,
+    location: { replace() { throw new Error('Navegação bloqueada'); } },
+    close() { this.closed = true; },
+  };
+  context.window.open = () => popup;
+  context.window.ecofitusRequest = async (path) => {
+    if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
+    if (path === '/api/order') return { url: 'https://wa.me/5541995922369?text=pedido' };
+    return snapshot;
+  };
+  get('cnpj').value = '12345678901234';
+  await get('order-form').listeners.submit({ preventDefault() {} });
+  assert.equal(popup.closed, true);
+  assert.equal(get('whatsapp-link').hidden, false);
+  assert.equal(get('whatsapp-link').href, 'https://wa.me/5541995922369?text=pedido');
+  assert.equal(get('cart-count').textContent, '0');
+});
+
+test('rejeita link inválido sem perder o carrinho', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  context.addProduct(products[0]);
+  const popup = { closed: false, close() { this.closed = true; } };
+  context.window.open = () => popup;
+  context.window.ecofitusRequest = async (path) => {
+    if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
+    if (path === '/api/order') return { url: 'https://example.com' };
+    return snapshot;
+  };
+  get('cnpj').value = '12345678901234';
+  await get('order-form').listeners.submit({ preventDefault() {} });
+  assert.equal(popup.closed, true);
+  assert.equal(get('cart-count').textContent, '3');
+  assert.equal(get('whatsapp-link').hidden, true);
+  assert.match(get('order-error').textContent, /pedido foi salvo.*link.*inválido/i);
+});
+
+test('fecha janela se o pedido for alterado durante a preparação', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  context.addProduct(products[0]);
+  let resolveOrder;
+  const popup = { closed: false, close() { this.closed = true; } };
+  context.window.open = () => popup;
+  context.window.ecofitusRequest = async (path) => {
+    if (path === '/api/company') return { cnpj: '12345678901234', name: 'Empresa teste' };
+    if (path === '/api/order') return new Promise((resolve) => { resolveOrder = resolve; });
+    return snapshot;
+  };
+  get('cnpj').value = '12345678901234';
+  const submission = get('order-form').listeners.submit({ preventDefault() {} });
+  await new Promise((resolve) => setImmediate(resolve));
+  context.addProduct(products[0]);
+  resolveOrder({ url: 'https://wa.me/5541995922369?text=pedido' });
+  await submission;
+  assert.equal(popup.closed, true);
+  assert.equal(get('cart-count').textContent, '6');
+  assert.equal(get('whatsapp-link').hidden, true);
+  assert.match(get('order-error').textContent, /salvo no histórico.*alterados/);
 });
 
 test('banner fixo ativa o filtro Black Friday e leva ao catálogo', async () => {
