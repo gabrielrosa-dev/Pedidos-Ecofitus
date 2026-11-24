@@ -1,6 +1,6 @@
 'use strict';
 
-const { getCampaign, campaigns } = require('./public/campaigns');
+const { getCampaign, campaigns, setCampaigns } = require('./public/campaigns');
 const { unitPrice } = require('./public/pricing');
 const { isValidTerm } = require('./public/terms');
 const MAX_AGE_MS = 90 * 1000;
@@ -186,4 +186,4 @@ function money(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, verifyPriceQuote, MAX_AGE_MS, MINIMUM_CENTS, isValidTerm };
+module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, verifyPriceQuote, MAX_AGE_MS, MINIMUM_CENTS, isValidTerm, setCampaigns };

@@ -1,18 +1,32 @@
 :root{font-family:Arial,sans-serif;color:#193e2c;background:#fafbf8;font-synthesis:none}
-.admin-edit-campaigns{margin-top:20px;padding-top:16px;border-top:1px solid #e0e8df}
-.admin-campaign-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.admin-campaign-heading h3{margin:0;font-size:16px}
-.admin-campaign-heading>div{display:flex;gap:8px}
-.admin-campaign-heading select{min-width:240px;padding:10px;border:1px solid #d7e3d6;border-radius:7px;background:#fff;color:#193e2c}
-.admin-campaigns{display:grid;gap:12px}
-.admin-campaign-card{display:grid;gap:10px;padding:14px;border:1px solid #dfe8dc;border-radius:9px;background:#f8faf7}
-.admin-campaign-card-heading{display:grid;grid-template-columns:1fr auto;gap:10px}
-.admin-campaign-title{width:100%;padding:10px;border:1px solid #d7e3d6;border-radius:7px;color:#193e2c;font:700 13px Arial,sans-serif}
-.admin-campaign-benefit{display:grid;gap:6px;color:#506957;font-size:11px;font-weight:700}
-.admin-campaign-benefit input{width:100%;padding:10px;border:1px solid #d7e3d6;border-radius:7px;font:inherit}
-.admin-campaign-items{display:grid;gap:8px}
-.admin-campaign-item-row{display:grid;grid-template-columns:2fr 95px 95px 145px;gap:8px;padding:10px;border-radius:8px;background:#edf3e9}
-@media(max-width:760px){.admin-campaign-heading,.admin-campaign-heading>div{align-items:stretch;flex-direction:column}.admin-campaign-heading select{min-width:0}.admin-campaign-card-heading,.admin-campaign-item-row{grid-template-columns:1fr}}
+.admin-heading-actions{display:flex;gap:8px}
+.admin-campaign-manager{padding:22px;border:1px solid #dce7dc;border-radius:14px;background:#fff}
+.admin-campaign-manager-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.admin-campaign-manager-heading h2{margin:5px 0;font-size:26px}
+.admin-campaign-manager-heading p{color:#6f8173}
+.admin-campaign-manager-heading>div{display:flex;gap:8px}
+.admin-campaign-list{display:grid;gap:14px}
+.admin-campaign-list-card{display:grid;grid-template-columns:190px 1fr auto;align-items:center;gap:16px;padding:14px;border:1px solid #e0e9df;border-radius:12px}
+.admin-campaign-list-image{width:190px;height:120px;object-fit:contain;border-radius:8px;background:#f4f7f2}
+.admin-campaign-list-details{display:grid;gap:6px}
+.admin-campaign-list-details h3,.admin-campaign-list-details p{margin:0}
+.admin-campaign-list-details p{color:#617765;font-size:13px}
+.admin-campaign-product-summary{color:#506957;font-size:12px}
+.admin-campaign-list-actions{display:flex;gap:8px}
+.admin-campaign-dialog form{display:grid;gap:16px}
+.admin-campaign-field{display:grid;gap:6px;color:#506957;font-size:12px;font-weight:700}
+.admin-campaign-field input,.admin-campaign-field select{width:100%;padding:11px;border:1px solid #d7e3d6;border-radius:7px;background:#fff;color:#193e2c;font:inherit}
+.admin-campaign-image-preview{display:flex;align-items:center;gap:12px;min-height:44px}
+.admin-campaign-image-preview img{max-width:320px;max-height:160px;object-fit:contain;border-radius:8px;background:#f4f7f2}
+.admin-campaign-product-section{display:grid;gap:10px;padding-top:16px;border-top:1px solid #e0e8df}
+.admin-campaign-product-section h3{margin:0}
+.admin-campaign-product-add{display:grid;grid-template-columns:1fr auto;align-items:end;gap:10px}
+.admin-campaign-items{display:grid;gap:10px}
+.admin-campaign-product-row{display:grid;grid-template-columns:minmax(150px,1fr) 110px 110px 190px auto;align-items:end;gap:10px;padding:12px;border-radius:9px;background:#f4f7f2}
+.admin-campaign-product-row label{display:grid;gap:6px;color:#506957;font-size:11px;font-weight:700}
+.admin-campaign-product-row input{width:100%;padding:10px;border:1px solid #d7e3d6;border-radius:7px;font:inherit}
+.admin-campaign-product-name{align-self:center}
+@media(max-width:760px){.admin-heading-actions,.admin-campaign-manager-heading,.admin-campaign-manager-heading>div{align-items:stretch;flex-direction:column}.admin-campaign-list-card,.admin-campaign-product-add,.admin-campaign-product-row{grid-template-columns:1fr}.admin-campaign-list-image{width:100%;height:180px}.admin-campaign-list-actions{flex-wrap:wrap}}
 .lookup-button{background:#eaf2e4;color:#204c33;border:0;border-radius:5px;padding:10px 14px;font-size:12px;font-weight:700}
 .lookup-button:disabled{opacity:.6;cursor:wait}
 .admin-main{max-width:1000px;margin:40px auto;padding:0 20px}
@@ -121,12 +135,7 @@
 .shop .campaign-carousel{margin-top:20px;padding:16px;background:#e9f1e7;border:1px solid #dfeadd;border-radius:18px}
 .shop .campaign-slide{height:clamp(400px,60vw,620px);position:relative;isolation:isolate;overflow:hidden;border-radius:12px}
 .shop .campaign-slide::before{content:"";position:absolute;inset:-24px;z-index:-1;background-position:center;background-size:cover;filter:blur(20px) brightness(.65)}
-.shop .campaign-slide:nth-child(1)::before{background-image:url("./images/campaigns/b12-queimacure.jpeg")}
-.shop .campaign-slide:nth-child(2)::before{background-image:url("./images/campaigns/b12-pix.jpeg")}
-.shop .campaign-slide:nth-child(3)::before{background-image:url("./images/campaigns/barril-chopp.jpeg")}
-.shop .campaign-slide:nth-child(4)::before{background-image:url("./images/campaigns/q10-b12.jpeg")}
-.shop .campaign-slide:nth-child(5)::before{background-image:url("./images/campaigns/regulax.jpeg")}
-.shop .campaign-slide:nth-child(6)::before{background-image:url("./images/campaigns/show-brindes.jpeg")}
+.shop .campaign-slide::before{background-image:var(--campaign-image,none)}
 .shop .campaign-slide img{border-radius:8px}
 .shop .campaign-controls{gap:0;padding-top:8px}
 .shop .campaign-controls .campaign-dot{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent}

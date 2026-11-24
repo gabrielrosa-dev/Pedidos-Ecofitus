@@ -1,11 +1,12 @@
 'use strict';
 
-const slides = Array.from(document.querySelectorAll('.campaign-slide'));
-const dots = Array.from(document.querySelectorAll('.campaign-dot'));
+let slides = [];
+let dots = [];
 let slideIndex = 0;
 let timer;
 
 function showSlide(index) {
+  if (!slides.length) return;
   slideIndex = (index + slides.length) % slides.length;
   slides.forEach((slide, i) => { slide.hidden = i !== slideIndex; });
   dots.forEach((dot, i) => {
@@ -13,6 +14,7 @@ function showSlide(index) {
     else dot.removeAttribute('aria-current');
   });
 }
+
 function setRotation() {
   clearInterval(timer);
   if (slides.length > 1) {
@@ -21,10 +23,65 @@ function setRotation() {
     }, 6000);
   }
 }
-dots.forEach((dot, index) => {
-  dot.addEventListener('click', () => { showSlide(index); setRotation(); });
+
+function renderCampaigns(campaigns) {
+  const section = document.querySelector('.campaign-section');
+  const slideContainer = document.getElementById('campaign-slides');
+  const controls = document.getElementById('campaign-controls');
+  slideContainer.replaceChildren();
+  controls.replaceChildren();
+  slides = [];
+  dots = [];
+  slideIndex = 0;
+  section.hidden = !campaigns.length;
+  campaigns.forEach((campaign, index) => {
+    const slide = document.createElement('div');
+    slide.className = 'campaign-slide';
+    slide.setAttribute('role', 'group');
+    slide.setAttribute('aria-roledescription', 'slide');
+    slide.setAttribute('aria-label', `${index + 1} de ${campaigns.length}: ${campaign.title}`);
+    slide.hidden = index !== 0;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'campaign-open';
+    button.dataset.campaign = campaign.id;
+    button.setAttribute('aria-label', `Ver detalhes da campanha ${campaign.title}`);
+    if (campaign.imageUrl) {
+      const image = document.createElement('img');
+      image.src = campaign.imageUrl;
+      image.alt = `Campanha ${campaign.title}`;
+      image.loading = index === 0 ? 'eager' : 'lazy';
+      button.append(image);
+      const safeUrl = campaign.imageUrl.replace(/["\\\r\n]/g, '');
+      slide.style.setProperty('--campaign-image', `url("${safeUrl}")`);
+    } else {
+      button.append(document.createTextNode(campaign.title));
+    }
+    slide.append(button);
+    slideContainer.append(slide);
+    slides.push(slide);
+
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'campaign-dot';
+    dot.setAttribute('aria-label', `Mostrar campanha ${index + 1}: ${campaign.title}`);
+    if (index === 0) dot.setAttribute('aria-current', 'true');
+    controls.append(dot);
+    dots.push(dot);
+  });
+  setRotation();
+}
+
+document.getElementById('campaign-controls').addEventListener('click', (event) => {
+  const dot = event.target.closest('.campaign-dot');
+  const index = dots.indexOf(dot);
+  if (index >= 0) {
+    showSlide(index);
+    setRotation();
+  }
 });
-setRotation();
+
+window.EcofitusExperience = { renderCampaigns };
 
 const installButton = document.getElementById('install-app');
 const installStatus = document.getElementById('install-status');

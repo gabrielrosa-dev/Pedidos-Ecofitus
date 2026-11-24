@@ -5,7 +5,12 @@ const $ = (id) => document.getElementById(id);
 let credentials = null;
 let selectedOrder = null;
 let catalog = [];
-let catalogUpdatedAt = Date.now();
+let campaigns = [];
+let editingCampaign = null;
+let editingCampaignItems = [];
+let selectedImageFile = null;
+let previewObjectUrl = '';
+let imageSelectionInvalid = false;
 for (const term of window.EcofitusTerms.terms) {
   const option = document.createElement('option');
   option.value = term;
@@ -21,17 +26,21 @@ function element(tag, className, text) {
 }
 
 async function loadCatalog() {
-  try {
-    const snapshot = await window.ecofitusRequest('/api/catalog');
-    catalog = snapshot.products || [];
-    catalogUpdatedAt = snapshot.updatedAt || Date.now();
-  } catch (error) {
-    catalog = [];
-  }
+  const snapshot = await window.ecofitusRequest('/api/catalog');
+  catalog = snapshot.products || [];
+  populateCampaignProductSelect();
+  return snapshot;
 }
 
 function request(operation, values = {}) {
   return window.ecofitusRequest(`/api/admin/orders${operation}`, {
+    auth: credentials,
+    ...values,
+  });
+}
+
+function campaignRequest(operation, values = {}) {
+  return window.ecofitusRequest(`/api/admin/campaigns${operation}`, {
     auth: credentials,
     ...values,
   });
@@ -85,12 +94,7 @@ function editedTotal() {
     total += Number(row.querySelector('[data-field="quantity"]').value) *
       Math.round(Number(row.querySelector('[data-field="price"]').value.replace(',', '.')) * 100);
   }
-  for (const campaign of document.querySelectorAll('.admin-campaign-card')) {
-    for (const row of campaign.querySelectorAll('.admin-campaign-item-row')) {
-      total += Number(row.querySelector('[data-field="campaign-quantity"]').value) *
-        Math.round(Number(row.querySelector('[data-field="campaign-price"]').value.replace(',', '.')) * 100);
-    }
-  }
+  for (const campaign of selectedOrder.campaigns || []) total += campaign.totalCents;
   $('edit-total').textContent = money(total);
 }
 
@@ -102,95 +106,16 @@ function itemInput(label, value, type, field) {
   input.dataset.field = field;
   input.required = true;
   if (type === 'number') {
-    input.min = field === 'campaign-bonus' || field === 'campaign-quantity' || field === 'campaign-price' ? '0' : (field === 'price' ? '0.01' : '1');
-    input.step = field === 'price' || field === 'campaign-price' ? '0.01' : '1';
+    input.min = field === 'price' ? '0.01' : '1';
+    input.step = field === 'price' ? '0.01' : '1';
   }
   input.addEventListener('input', editedTotal);
   wrapper.append(input);
   return wrapper;
 }
 
-function campaignItemRow(item) {
-  const row = element('div', 'admin-campaign-item-row');
-  row.dataset.id = item.id;
-  row.dataset.ean = item.ean || '';
-  row.append(
-    itemInput('Produto', item.name, 'text', 'campaign-name'),
-    itemInput('Quantidade', item.quantity || 0, 'number', 'campaign-quantity'),
-    itemInput('Bonificadas', item.bonus || 0, 'number', 'campaign-bonus'),
-    itemInput('Valor unitário (R$)', (item.priceCents / 100).toFixed(2), 'number', 'campaign-price')
-  );
-  return row;
-}
-
-function renderCampaignEditor() {
-  const container = $('edit-campaigns');
-  container.replaceChildren();
-  for (const campaign of selectedOrder.campaigns || []) {
-    const card = element('article', 'admin-campaign-card');
-    card.dataset.campaignId = campaign.id;
-    const heading = element('div', 'admin-campaign-card-heading');
-    const title = element('input', 'admin-campaign-title');
-    title.value = campaign.title;
-    title.required = true;
-    title.maxLength = 300;
-    const remove = element('button', 'campaign-remove', 'Remover campanha');
-    remove.type = 'button';
-    remove.addEventListener('click', () => {
-      selectedOrder.campaigns = selectedOrder.campaigns.filter((entry) => entry.id !== campaign.id);
-      for (const option of $('campaign-to-add').options) {
-        option.disabled = selectedOrder.campaigns.some((entry) => entry.id === option.value);
-      }
-      renderCampaignEditor();
-      editedTotal();
-    });
-    heading.append(title, remove);
-    const benefit = element('label', 'admin-campaign-benefit', 'Benefício solicitado');
-    const benefitInput = element('input');
-    benefitInput.value = campaign.benefit || '';
-    benefitInput.maxLength = 1000;
-    benefit.append(benefitInput);
-    const items = element('div', 'admin-campaign-items');
-    for (const item of campaign.items || []) items.append(campaignItemRow(item));
-    card.append(heading, benefit, items);
-    container.append(card);
-  }
-  editedTotal();
-}
-
-function addCampaign(id) {
-  const config = window.EcofitusCampaigns.campaigns.find((campaign) => campaign.id === id);
-  if (!config || (selectedOrder.campaigns || []).some((campaign) => campaign.id === id)) return;
-  const items = config.items.map((configItem) => {
-    const product = catalog.find((entry) => entry.ean === configItem.ean);
-    let priceCents = 0;
-    if (product && configItem.quantity) {
-      priceCents = window.EcofitusPricing.unitPrice(product, configItem.quantity, catalogUpdatedAt).priceCents;
-    }
-    return {
-      id: product ? product.id : `${config.id}-${configItem.ean}`,
-      ean: configItem.ean,
-      name: product ? product.name : `Produto ${configItem.ean}`,
-      quantity: configItem.quantity,
-      bonus: configItem.bonus || 0,
-      priceCents,
-    };
-  });
-  selectedOrder.campaigns = [...(selectedOrder.campaigns || []), {
-    id: config.id,
-    title: config.title,
-    benefit: config.benefit,
-    items,
-  }];
-  for (const option of $('campaign-to-add').options) {
-    option.disabled = selectedOrder.campaigns.some((entry) => entry.id === option.value);
-  }
-  renderCampaignEditor();
-}
-
 function openEditor(order) {
   selectedOrder = structuredClone(order);
-  selectedOrder.campaigns = Array.isArray(order.campaigns) ? structuredClone(order.campaigns) : [];
   $('edit-title').textContent = `Pedido ${order.id.slice(0, 8)}`;
   $('edit-company').value = order.companyName;
   if (!window.EcofitusTerms.isValidTerm(order.terms)) {
@@ -211,35 +136,173 @@ function openEditor(order) {
     );
     $('edit-items').append(row);
   }
-  const campaignSelect = $('campaign-to-add');
-  campaignSelect.replaceChildren();
-  for (const campaign of window.EcofitusCampaigns.campaigns) {
-    const option = element('option', '', campaign.title);
-    option.value = campaign.id;
-    option.disabled = selectedOrder.campaigns.some((entry) => entry.id === campaign.id);
-    campaignSelect.append(option);
-  }
-  renderCampaignEditor();
   $('edit-status').hidden = true;
   editedTotal();
   $('edit-dialog').showModal();
 }
 
+function populateCampaignProductSelect() {
+ const select = $('campaign-product-select');
+ select.replaceChildren();
+ for (const product of catalog) {
+   if (!product.ean) continue;
+   const option = element('option', '', `${product.name} · ${product.ean}`);
+   option.value = product.ean;
+   select.append(option);
+ }
+}
+
+async function loadCampaigns() {
+ $('campaign-manager-status').textContent = 'Carregando campanhas...';
+ const data = await campaignRequest('');
+ campaigns = data.campaigns;
+ window.EcofitusCampaigns.setCampaigns(campaigns);
+ renderCampaignList();
+ $('campaign-manager-status').textContent = `${campaigns.length} campanha(s) cadastrada(s).`;
+}
+
+function renderCampaignList() {
+ const list = $('campaign-list');
+ list.replaceChildren();
+ for (const campaign of campaigns) {
+   const card = element('article', 'admin-campaign-list-card');
+   const image = element('img', 'admin-campaign-list-image');
+   image.src = campaign.imageUrl;
+   image.alt = `Banner: ${campaign.title}`;
+   image.loading = 'lazy';
+   const details = element('div', 'admin-campaign-list-details');
+   details.append(element('h3', '', campaign.title), element('p', '', campaign.benefit));
+   for (const item of campaign.items) {
+     const product = catalog.find((entry) => entry.ean === item.ean);
+     const price = item.priceCents === undefined
+       ? 'preço atual do catálogo'
+       : money(item.priceCents);
+     details.append(element('span', 'admin-campaign-product-summary',
+       `${product ? product.name : item.ean}: ${item.quantity} paga(s), ${item.bonus || 0} bonificada(s) · ${price} por unidade`));
+   }
+   const actions = element('div', 'admin-campaign-list-actions');
+   const edit = element('button', 'lookup-button', 'Editar');
+   edit.type = 'button';
+   edit.addEventListener('click', () => openCampaignEditor(campaign));
+   const remove = element('button', 'admin-secondary-button', 'Excluir');
+   remove.type = 'button';
+   remove.addEventListener('click', async () => {
+     if (!window.confirm(`Excluir a campanha “${campaign.title}” da loja? Os pedidos já salvos não serão alterados.`)) return;
+     remove.disabled = true;
+     try {
+       await campaignRequest('/delete', { campaignId: campaign.id });
+       await loadCampaigns();
+     } catch (error) {
+       $('campaign-manager-status').textContent = error.message;
+     } finally {
+       remove.disabled = false;
+     }
+   });
+   actions.append(edit, remove);
+   card.append(image, details, actions);
+   list.append(card);
+ }
+}
+
+function renderCampaignProductItems() {
+ const container = $('campaign-product-items');
+ container.replaceChildren();
+ editingCampaignItems.forEach((item, index) => {
+   const product = catalog.find((entry) => entry.ean === item.ean);
+   const row = element('div', 'admin-campaign-product-row');
+   row.dataset.ean = item.ean;
+   const name = element('strong', 'admin-campaign-product-name', product ? product.name : item.ean);
+   const quantity = element('label', '', 'Quantidade paga');
+   const quantityInput = element('input');
+   quantityInput.type = 'number';
+   quantityInput.min = '0';
+   quantityInput.step = '1';
+   quantityInput.value = item.quantity;
+   quantityInput.dataset.field = 'quantity';
+   quantity.append(quantityInput);
+   const bonus = element('label', '', 'Bonificadas');
+   const bonusInput = element('input');
+   bonusInput.type = 'number';
+   bonusInput.min = '0';
+   bonusInput.step = '1';
+   bonusInput.value = item.bonus || 0;
+   bonusInput.dataset.field = 'bonus';
+   bonus.append(bonusInput);
+   const price = element('label', '', 'Preço unitário da campanha (R$)');
+   const priceInput = element('input');
+   priceInput.type = 'number';
+   priceInput.min = '0';
+   priceInput.step = '0.01';
+   priceInput.placeholder = 'Preço do catálogo';
+   priceInput.value = item.priceCents === null || item.priceCents === undefined
+     ? ''
+     : (item.priceCents / 100).toFixed(2);
+   priceInput.dataset.field = 'price';
+   price.append(priceInput);
+   const remove = element('button', 'campaign-remove', 'Remover produto');
+   remove.type = 'button';
+   remove.addEventListener('click', () => {
+     editingCampaignItems.splice(index, 1);
+     renderCampaignProductItems();
+   });
+   row.append(name, quantity, bonus, price, remove);
+   container.append(row);
+ });
+}
+
+function openCampaignEditor(campaign = null) {
+ if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+ previewObjectUrl = '';
+ editingCampaign = campaign;
+ editingCampaignItems = campaign ? structuredClone(campaign.items) : [];
+ selectedImageFile = null;
+ imageSelectionInvalid = false;
+ $('campaign-editor-form').reset();
+ $('campaign-editor-title').textContent = campaign ? 'Editar campanha' : 'Adicionar campanha';
+ $('campaign-title-input').value = campaign ? campaign.title : '';
+ $('campaign-benefit-input').value = campaign ? campaign.benefit : '';
+ $('campaign-image-file').value = '';
+ $('campaign-image-preview').hidden = !campaign;
+ $('campaign-image-preview').src = campaign ? campaign.imageUrl : '';
+ $('campaign-image-status').textContent = campaign
+   ? 'Imagem atual. Selecione outro arquivo para substituí-la.'
+   : 'Selecione uma imagem para o banner.';
+ $('campaign-editor-status').hidden = true;
+ populateCampaignProductSelect();
+ renderCampaignProductItems();
+ $('campaign-editor').showModal();
+}
+
+function readImageBase64(file) {
+ return new Promise((resolve, reject) => {
+   const reader = new FileReader();
+   reader.onload = () => resolve(String(reader.result).split(',')[1]);
+   reader.onerror = () => reject(new Error('Não foi possível ler o arquivo da imagem.'));
+   reader.readAsDataURL(file);
+ });
+}
+
 $('admin-login-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  $('login-status').hidden = true;
-  credentials = { email: $('admin-email').value, password: $('admin-password').value };
-  try {
-    await load(true);
-    await loadCatalog();
-    $('admin-login-panel').hidden = true;
-    $('admin-content').hidden = false;
-    $('admin-password').value = '';
-  } catch (error) {
-    credentials = null;
-    $('login-status').textContent = error.message;
-    $('login-status').hidden = false;
-  }
+ event.preventDefault();
+ $('login-status').hidden = true;
+ credentials = { email: $('admin-email').value, password: $('admin-password').value };
+ try {
+   await load(true);
+   $('admin-login-panel').hidden = true;
+   $('admin-content').hidden = false;
+   $('admin-password').value = '';
+   const [catalogResult, campaignsResult] = await Promise.allSettled([loadCatalog(), loadCampaigns()]);
+   if (catalogResult.status === 'rejected') {
+     $('campaign-manager-status').textContent = `Catálogo indisponível para editar produtos: ${catalogResult.reason.message}`;
+   }
+   if (campaignsResult.status === 'rejected') {
+     $('campaign-manager-status').textContent = campaignsResult.reason.message;
+   }
+ } catch (error) {
+   credentials = null;
+   $('login-status').textContent = error.message;
+   $('login-status').hidden = false;
+ }
 });
 
 $('edit-form').addEventListener('submit', async (event) => {
@@ -252,23 +315,10 @@ $('edit-form').addEventListener('submit', async (event) => {
     quantity: Number(row.querySelector('[data-field="quantity"]').value),
     priceCents: Math.round(Number(row.querySelector('[data-field="price"]').value.replace(',', '.')) * 100),
   }));
-  const campaigns = Array.from(document.querySelectorAll('.admin-campaign-card'), (card) => ({
-    id: card.dataset.campaignId,
-    title: card.querySelector('.admin-campaign-title').value,
-    benefit: card.querySelector('.admin-campaign-benefit input').value,
-    items: Array.from(card.querySelectorAll('.admin-campaign-item-row'), (row) => ({
-      id: row.dataset.id,
-      ean: row.dataset.ean,
-      name: row.querySelector('[data-field="campaign-name"]').value,
-      quantity: Number(row.querySelector('[data-field="campaign-quantity"]').value),
-      bonus: Number(row.querySelector('[data-field="campaign-bonus"]').value),
-      priceCents: Math.round(Number(row.querySelector('[data-field="campaign-price"]').value.replace(',', '.')) * 100),
-    })),
-  }));
   try {
     await request(`/${selectedOrder.id}`, {
       orderId: selectedOrder.id,
-      changes: { companyName: $('edit-company').value, terms: $('edit-terms').value, items, campaigns },
+      changes: { companyName: $('edit-company').value, terms: $('edit-terms').value, items },
     });
     $('edit-dialog').close();
     await load();
@@ -278,9 +328,119 @@ $('edit-form').addEventListener('submit', async (event) => {
   }
 });
 
+$('campaign-image-file').addEventListener('change', () => {
+  const file = $('campaign-image-file').files[0] || null;
+  selectedImageFile = file;
+  imageSelectionInvalid = false;
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    selectedImageFile = null;
+    imageSelectionInvalid = true;
+    $('campaign-image-file').value = '';
+    $('campaign-editor-status').textContent = 'Selecione uma imagem JPG, PNG ou WebP de até 2 MB.';
+    $('campaign-editor-status').hidden = false;
+    return;
+  }
+  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+  previewObjectUrl = URL.createObjectURL(file);
+  $('campaign-image-preview').src = previewObjectUrl;
+  $('campaign-image-preview').hidden = false;
+  $('campaign-image-status').textContent = 'Prévia da nova imagem selecionada.';
+  $('campaign-editor-status').hidden = true;
+});
+
+$('add-campaign-product').addEventListener('click', () => {
+  const product = catalog.find((entry) => entry.ean === $('campaign-product-select').value);
+  if (!product) {
+    $('campaign-editor-status').textContent = 'Não há produto válido selecionado no catálogo.';
+    $('campaign-editor-status').hidden = false;
+    return;
+  }
+  if (editingCampaignItems.some((item) => item.ean === product.ean)) {
+    $('campaign-editor-status').textContent = 'Esse produto já está na campanha.';
+    $('campaign-editor-status').hidden = false;
+    return;
+  }
+  editingCampaignItems.push({ ean: product.ean, quantity: product.multiple, bonus: 0, priceCents: null });
+  $('campaign-editor-status').hidden = true;
+  renderCampaignProductItems();
+});
+
+$('campaign-editor-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  $('campaign-editor-status').hidden = true;
+  const items = Array.from(document.querySelectorAll('.admin-campaign-product-row'), (row) => {
+    const priceValue = row.querySelector('[data-field="price"]').value.trim();
+    return {
+      ean: row.dataset.ean,
+      quantity: Number(row.querySelector('[data-field="quantity"]').value),
+      bonus: Number(row.querySelector('[data-field="bonus"]').value),
+      priceCents: priceValue === '' ? null : Math.round(Number(priceValue.replace(',', '.')) * 100),
+    };
+  });
+  if (imageSelectionInvalid) {
+    $('campaign-editor-status').textContent = 'Corrija o arquivo de imagem selecionado antes de salvar.';
+    $('campaign-editor-status').hidden = false;
+    return;
+  }
+  const invalidItem = items.some((item) => {
+    const product = catalog.find((entry) => entry.ean === item.ean);
+    return !product || !Number.isSafeInteger(item.quantity) || item.quantity < 0 ||
+      !Number.isSafeInteger(item.bonus) || item.bonus < 0 ||
+      item.quantity + item.bonus < 1 ||
+      (item.quantity + item.bonus) % product.multiple !== 0 ||
+      (item.priceCents !== null && (!Number.isSafeInteger(item.priceCents) || item.priceCents < 0));
+  });
+  if (!items.length || invalidItem) {
+    $('campaign-editor-status').textContent = 'Revise os produtos: quantidades, bonificações e preços devem ser válidos e respeitar o múltiplo de venda.';
+    $('campaign-editor-status').hidden = false;
+    return;
+  }
+  const submit = $('campaign-editor-form').querySelector('[type="submit"]');
+  submit.disabled = true;
+  try {
+    let imageUrl = editingCampaign ? editingCampaign.imageUrl : '';
+    if (selectedImageFile) {
+      const base64 = await readImageBase64(selectedImageFile);
+      const uploaded = await campaignRequest('/image', { mimeType: selectedImageFile.type, base64 });
+      imageUrl = uploaded.imageUrl;
+    }
+    if (!imageUrl) throw new Error('Selecione uma imagem para a campanha.');
+    const campaign = {
+      id: editingCampaign ? editingCampaign.id : crypto.randomUUID().toLowerCase(),
+      title: $('campaign-title-input').value,
+      benefit: $('campaign-benefit-input').value,
+      imageUrl,
+      items,
+    };
+    await campaignRequest('/save', { campaign });
+    await loadCampaigns();
+    $('campaign-editor').close();
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = '';
+  } catch (error) {
+    $('campaign-editor-status').textContent = error.message;
+    $('campaign-editor-status').hidden = false;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
 $('refresh').addEventListener('click', load);
 $('apply-filter').addEventListener('click', load);
-$('add-campaign').addEventListener('click', () => addCampaign($('campaign-to-add').value));
+$('manage-campaigns').addEventListener('click', () => {
+  $('admin-orders-view').hidden = true;
+  $('campaign-manager').hidden = false;
+});
+$('back-to-orders').addEventListener('click', () => {
+  $('campaign-manager').hidden = true;
+  $('admin-orders-view').hidden = false;
+});
+$('new-campaign').addEventListener('click', () => openCampaignEditor());
+$('close-campaign-editor').addEventListener('click', () => $('campaign-editor').close());
+$('campaign-editor').addEventListener('click', (event) => {
+  if (event.target === $('campaign-editor')) $('campaign-editor').close();
+});
 $('close-edit').addEventListener('click', () => $('edit-dialog').close());
 $('edit-dialog').addEventListener('click', (event) => {
   if (event.target === $('edit-dialog')) $('edit-dialog').close();

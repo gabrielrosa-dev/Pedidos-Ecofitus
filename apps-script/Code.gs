@@ -1,6 +1,8 @@
 const SPREADSHEET_ID = '12oInQfstoUAfP6x1egIIsRgDIse8Mm78w17NmYs5I1o';
 const PARENT_ORIGIN = 'https://gabrielrosa-dev.github.io';
 const CATALOG_MAX_AGE = 30 * 1000;
+const CAMPAIGN_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+const CAMPAIGN_IMAGE_MAX_BASE64_LENGTH = 2800000;
 const REPRESENTATIVES = {
   gabriel: { id: 'gabriel', name: 'Gabriel', whatsapp: '5541995922369' },
   vanderson: { id: 'vanderson', name: 'Vanderson', whatsapp: '5541988604367' },
@@ -21,7 +23,7 @@ function doGet(e) {
   }
   let result;
   try {
-    result = { ok: true, data: catalog_() };
+    result = { ok: true, data: { ...catalog_(), campaigns: listCampaignConfigs_() } };
   } catch (error) {
     console.error('Falha ao consultar catálogo: ' + error.message);
     result = { ok: false, error: 'Não foi possível atualizar o catálogo. Tente novamente.' };
@@ -35,7 +37,7 @@ function doPost(e) {
   try {
     const raw = e.parameter.payload;
     nonce = e.parameter.nonce || '';
-    if (!/^[a-f0-9-]{36}$/.test(nonce) || !raw || raw.length > 50000) {
+    if (!/^[a-f0-9-]{36}$/.test(nonce) || !raw || raw.length > 3000000) {
       throw new Error('Requisição inválida.');
     }
     const input = JSON.parse(raw);
@@ -48,6 +50,15 @@ function doPost(e) {
       data = listAdminOrders_(input.auth, input.start, input.end);
     } else if (input.action === 'adminUpdate') {
       data = updateAdminOrder_(input.auth, input.orderId, input.changes);
+    } else if (input.action === 'adminCampaignsList') {
+      adminAccount_(input.auth);
+      data = { campaigns: listCampaignConfigs_() };
+    } else if (input.action === 'adminCampaignSave') {
+      data = saveAdminCampaign_(input.auth, input.campaign);
+    } else if (input.action === 'adminCampaignDelete') {
+      data = deleteAdminCampaign_(input.auth, input.campaignId);
+    } else if (input.action === 'adminCampaignImageUpload') {
+      data = uploadAdminCampaignImage_(input.auth, input.mimeType, input.base64);
     } else {
       throw new Error('Operação inválida.');
     }
@@ -75,6 +86,153 @@ function setup() {
     representatives = book.insertSheet('Representantes');
     representatives.appendRow(['E-mail', 'Representante', 'Salt', 'Hash da senha']);
   }
+  campaignSheet_(true);
+}
+
+function campaignSheet_(seedDefaults) {
+  const book = spreadsheet_();
+  let sheet = book.getSheetByName('Campanhas');
+  let created = false;
+  if (!sheet) {
+    sheet = book.insertSheet('Campanhas');
+    sheet.appendRow(['ID', 'Dados JSON']);
+    created = true;
+  }
+  if (seedDefaults && created && sheet.getLastRow() === 1) {
+    const defaults = campaignCore_().campaigns;
+    defaults.forEach((campaign) => sheet.appendRow([campaign.id, JSON.stringify(campaign)]));
+  }
+  return sheet;
+}
+
+function listCampaignConfigs_() {
+  const sheet = campaignSheet_(true);
+  const count = sheet.getLastRow();
+  const rows = count > 1 ? sheet.getRange(2, 1, count - 1, 2).getValues() : [];
+  return rows.map((row) => {
+    try {
+      const campaign = JSON.parse(row[1]);
+      if (!campaign || campaign.id !== row[0]) throw new Error('Identificador inconsistente.');
+      return campaign;
+    } catch (error) {
+      console.error('Cadastro de campanha inválido: ' + error.message);
+      throw new Error('Há uma campanha inválida na planilha. Revise a aba Campanhas.');
+    }
+  });
+}
+
+function normalizeCampaign_(input) {
+  if (!input || typeof input.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,79}$/i.test(input.id) ||
+      typeof input.title !== 'string' || !input.title.trim() || input.title.length > 200 ||
+      typeof input.benefit !== 'string' || input.benefit.length > 1500 ||
+      typeof input.imageUrl !== 'string' || input.imageUrl.length > 2000 ||
+      !/^https:\/\/[a-z0-9.-]+(?::\d{1,5})?(?:[/?#][^\s\\]*)?$/i.test(input.imageUrl) ||
+      !Array.isArray(input.items) || input.items.length < 1 || input.items.length > 50) {
+    throw new Error('Revise o título, a imagem e os produtos da campanha.');
+  }
+  const products = catalog_().products;
+  const seen = new Set();
+  const items = input.items.map((item) => {
+    if (!item || typeof item.ean !== 'string' || !/^\d{8,14}$/.test(item.ean) || seen.has(item.ean) ||
+        !Number.isSafeInteger(item.quantity) || item.quantity < 0 ||
+        !Number.isSafeInteger(item.bonus) || item.bonus < 0 ||
+        (!item.quantity && !item.bonus) ||
+        (item.priceCents !== null && item.priceCents !== undefined &&
+          (!Number.isSafeInteger(item.priceCents) || item.priceCents < 0))) {
+      throw new Error('Revise o código, quantidade, bonificação e preço dos produtos.');
+    }
+    const product = products.find((entry) => entry.ean === item.ean);
+    if (!product) throw new Error('Um produto da campanha não foi encontrado no catálogo atualizado.');
+    if ((item.quantity + item.bonus) % product.multiple !== 0) {
+      throw new Error(`A quantidade da campanha não respeita o múltiplo de venda de ${product.name}.`);
+    }
+    seen.add(item.ean);
+    const normalized = { ean: item.ean, quantity: item.quantity, bonus: item.bonus };
+    if (item.priceCents !== null && item.priceCents !== undefined) normalized.priceCents = item.priceCents;
+    return normalized;
+  });
+  return {
+    id: input.id,
+    title: input.title.trim(),
+    benefit: input.benefit.trim(),
+    imageUrl: input.imageUrl,
+    items,
+  };
+}
+
+function saveAdminCampaign_(auth, input) {
+  adminAccount_(auth);
+  const campaign = normalizeCampaign_(input);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sheet = campaignSheet_(true);
+    const count = sheet.getLastRow();
+    const rows = count > 1 ? sheet.getRange(2, 1, count - 1, 1).getValues() : [];
+    const index = rows.findIndex((row) => row[0] === campaign.id);
+    const values = [campaign.id, JSON.stringify(campaign)];
+    if (index >= 0) sheet.getRange(index + 2, 1, 1, 2).setValues([values]);
+    else sheet.appendRow(values);
+    SpreadsheetApp.flush();
+    return { campaign };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deleteAdminCampaign_(auth, campaignId) {
+  adminAccount_(auth);
+  if (typeof campaignId !== 'string' || !/^[a-z0-9][a-z0-9-]{0,79}$/i.test(campaignId)) {
+    throw new Error('Campanha inválida.');
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sheet = campaignSheet_(true);
+    const count = sheet.getLastRow();
+    const rows = count > 1 ? sheet.getRange(2, 1, count - 1, 1).getValues() : [];
+    const index = rows.findIndex((row) => row[0] === campaignId);
+    if (index < 0) throw new Error('Campanha não encontrada.');
+    sheet.deleteRow(index + 2);
+    SpreadsheetApp.flush();
+    return { campaignId };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function uploadAdminCampaignImage_(auth, mimeType, base64) {
+  adminAccount_(auth);
+  const types = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  if (!types[mimeType] || typeof base64 !== 'string' ||
+      base64.length < 1 || base64.length > CAMPAIGN_IMAGE_MAX_BASE64_LENGTH ||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    throw new Error('Selecione uma imagem JPG, PNG ou WebP de até 2 MB.');
+  }
+  const bytes = Utilities.base64Decode(base64);
+  if (!bytes.length || bytes.length > CAMPAIGN_IMAGE_MAX_BYTES) {
+    throw new Error('A imagem deve ter no máximo 2 MB.');
+  }
+  const signature = bytes.slice(0, 12).map((byte) => byte & 255);
+  const validSignature = mimeType === 'image/jpeg'
+    ? signature[0] === 255 && signature[1] === 216 && signature[2] === 255
+    : mimeType === 'image/png'
+      ? signature.slice(0, 8).join(',') === '137,80,78,71,13,10,26,10'
+      : signature.slice(0, 4).join(',') === '82,73,70,70' &&
+        signature.slice(8, 12).join(',') === '87,69,66,80';
+  if (!validSignature) throw new Error('O conteúdo do arquivo não corresponde ao formato da imagem.');
+  const file = DriveApp.createFile(Utilities.newBlob(
+    bytes, mimeType, `ecofitus-campaign-${Date.now()}.${types[mimeType]}`
+  ));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return {
+    imageUrl: `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w1600`,
+    fileId: file.getId(),
+  };
 }
 
 function checkSetup() {
@@ -83,6 +241,7 @@ function checkSetup() {
   }
   if (!spreadsheet_().getSheetByName('Pedidos')) throw new Error('Aba Pedidos não encontrada. Execute setup.');
   if (!spreadsheet_().getSheetByName('Representantes')) throw new Error('Aba Representantes não encontrada. Execute setup.');
+  if (!spreadsheet_().getSheetByName('Campanhas')) throw new Error('Aba Campanhas não encontrada. Execute setup.');
   const snapshot = catalog_();
   console.log('Configuração básica verificada. Produtos no catálogo: ' + snapshot.products.length);
 }
@@ -166,12 +325,14 @@ function createOrder_(input) {
   const representative = REPRESENTATIVES[input.representativeId];
   if (!representative) throw new Error('Selecione um representante válido.');
   const snapshot = catalog_(true);
-  catalogCore_().buildOrder(input, snapshot.products, snapshot.updatedAt, 'Aguardando consulta');
+  const core = catalogCore_();
+  core.setCampaigns(listCampaignConfigs_());
+  core.buildOrder(input, snapshot.products, snapshot.updatedAt, 'Aguardando consulta');
   const company = lookupCompany_(input.cnpj);
   const now = Date.now();
-  const message = catalogCore_().buildOrder(input, snapshot.products, snapshot.updatedAt, company.name, now);
-  const order = catalogCore_().calculateOrder({ ...input, campaigns: input.campaigns === undefined ? [] : input.campaigns }, snapshot.products, now);
-  catalogCore_().verifyPriceQuote(input, order);
+  const message = core.buildOrder(input, snapshot.products, snapshot.updatedAt, company.name, now);
+  const order = core.calculateOrder({ ...input, campaigns: input.campaigns === undefined ? [] : input.campaigns }, snapshot.products, now);
+  core.verifyPriceQuote(input, order);
   const canonical = JSON.stringify({
     representativeId: representative.id, cnpj: company.cnpj, terms: input.terms.trim(),
     items: input.items.map(({ id, quantity }) => ({ id, quantity })).sort((a, b) => a.id.localeCompare(b.id)),

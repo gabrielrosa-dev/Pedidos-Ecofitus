@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { getCampaign } = require('../public/campaigns');
+const { getCampaign, campaigns, setCampaigns } = require('../public/campaigns');
 const { calculateOrder, buildOrder, verifyPriceQuote } = require('../catalog');
 const { fingerprint } = require('../orders');
 
@@ -55,6 +55,35 @@ test('campanhas usam o preço promocional da quantidade paga', () => {
   assert.equal(getCampaign('barril-chopp', discounted, now).totalCents, 86040);
   assert.equal(getCampaign('show-brindes', discounted, now).totalCents, 38240);
   assert.equal(getCampaign('show-brindes', discounted, now).lines[0].priceCents, 2390);
+});
+
+test('preço definido na campanha prevalece sobre a promoção ativa do catálogo', () => {
+  const now = Date.now();
+  const promoted = products.map((p) => p.id === 'b12' ? { ...p, promotions: [
+    { priceCents: 1900, taxesConfirmed: true, begin: now - 1000, end: now + 1000, minQuantity: 1, maxQuantity: 10 },
+  ] } : p);
+  const previous = campaigns.slice();
+  setCampaigns([{
+    id: 'b12-preco-campanha',
+    title: 'B12 por preço especial',
+    benefit: '',
+    items: [{ ean: '7896920307922', quantity: 3, bonus: 0, priceCents: 2390 }],
+  }]);
+  try {
+    const result = calculateOrder({ items: [], campaigns: ['b12-preco-campanha'] }, promoted, now);
+    assert.equal(result.campaigns[0].items[0].priceCents, 2390);
+    assert.equal(result.totalCents, 7170);
+    const quote = { items: [], campaigns: [{
+      id: 'b12-preco-campanha',
+      items: [{ id: 'b12', priceCents: 2390 }],
+    }] };
+    assert.doesNotThrow(() => verifyPriceQuote({ priceQuote: quote }, result));
+    const message = buildOrder({ ...input, campaigns: ['b12-preco-campanha'] }, promoted, now, 'Empresa', now);
+    assert.match(message, /23,90/);
+    assert.doesNotMatch(message, /19,00/);
+  } finally {
+    setCampaigns(previous);
+  }
 });
 
 test('confirma os preços individuais das campanhas antes de preparar', () => {

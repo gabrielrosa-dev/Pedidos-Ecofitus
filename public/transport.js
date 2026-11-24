@@ -45,6 +45,10 @@ window.ecofitusRequest = function (path, body) {
     : path === '/api/order' ? 'order'
     : path.startsWith('/api/admin/orders/') ? 'adminUpdate'
     : path === '/api/admin/orders' ? 'adminList'
+    : path === '/api/admin/campaigns' ? 'adminCampaignsList'
+    : path === '/api/admin/campaigns/save' ? 'adminCampaignSave'
+    : path === '/api/admin/campaigns/delete' ? 'adminCampaignDelete'
+    : path === '/api/admin/campaigns/image' ? 'adminCampaignImageUpload'
     : '';
   if (!action || body === undefined) return Promise.reject(new Error('Operação não suportada.'));
   return new Promise((resolve, reject) => {
@@ -61,7 +65,14 @@ window.ecofitusRequest = function (path, body) {
       ? { action, cnpj: body.cnpj }
       : action === 'order'
         ? { action, order: body }
-        : { action, auth: body.auth, start: body.start, end: body.end, orderId: body.orderId, changes: body.changes };
+        : action === 'adminList'
+          ? { action, auth: body.auth, start: body.start, end: body.end }
+          : action === 'adminUpdate'
+            ? { action, auth: body.auth, orderId: body.orderId, changes: body.changes }
+            : {
+              action, auth: body.auth, campaign: body.campaign, campaignId: body.campaignId,
+              mimeType: body.mimeType, base64: body.base64,
+            };
     for (const [name, value] of Object.entries({ nonce, payload: JSON.stringify(payload) })) {
       const input = document.createElement('input');
       input.name = name;

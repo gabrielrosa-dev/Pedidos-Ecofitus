@@ -82,6 +82,25 @@ test('carrinho permanece após recarregar e atualizar o catálogo', async () => 
   assert.equal(reloaded.get('cart-count').textContent, '3');
 });
 
+test('catálogo aplica campanhas atualizadas ao carrossel e mantém o preço definido', async () => {
+  const { context, snapshot } = await storefront();
+  const campaign = {
+    id: 'b12-fixed-price',
+    title: 'B12 por R$ 23,90',
+    benefit: '',
+    imageUrl: 'https://example.com/banner.png',
+    items: [{ ean: '789000', quantity: 3, bonus: 0, priceCents: 2390 }],
+  };
+  const campaignsApi = context.window.EcofitusCampaigns;
+  campaignsApi.setCampaigns = (entries) => { campaignsApi.campaigns = entries; };
+  let shownCampaigns = [];
+  context.window.EcofitusExperience = { renderCampaigns: (entries) => { shownCampaigns = entries; } };
+  snapshot.campaigns = [campaign];
+  await context.loadCatalog();
+  assert.deepEqual(shownCampaigns, [campaign]);
+  assert.equal(campaignsApi.campaigns[0].items[0].priceCents, 2390);
+});
+
 test('busca ignora acentos e encontra ID; filtro mantém apenas disponíveis', async () => {
   const { get } = await storefront();
   get('search').value = 'oleo';

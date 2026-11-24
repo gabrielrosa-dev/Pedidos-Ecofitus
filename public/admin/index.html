@@ -33,8 +33,12 @@
     <section id="admin-content" hidden>
       <header class="admin-heading">
         <div><p class="eyebrow">HISTÓRICO PRIVADO</p><h1>Pedidos de <span id="representative-name">...</span></h1><p>Consulte, ajuste e recupere o espelho dos seus pedidos.</p></div>
-        <button id="logout" class="admin-secondary-button" type="button">Sair</button>
+        <div class="admin-heading-actions">
+          <button id="manage-campaigns" class="admin-secondary-button" type="button">Gerenciar campanhas</button>
+          <button id="logout" class="admin-secondary-button" type="button">Sair</button>
+        </div>
       </header>
+      <div id="admin-orders-view">
       <section class="admin-filters" aria-label="Filtro por período">
         <label>Data inicial<input id="start-date" type="date"></label>
         <label>Data final<input id="end-date" type="date"></label>
@@ -45,6 +49,15 @@
       </section>
       <div class="admin-toolbar"><p id="status" class="admin-status" role="status">Carregando pedidos...</p><button id="refresh" class="lookup-button" type="button">Atualizar histórico</button></div>
       <div id="orders" class="admin-orders"></div>
+      </div>
+      <section id="campaign-manager" class="admin-campaign-manager" hidden>
+        <header class="admin-campaign-manager-heading">
+          <div><p class="eyebrow">CONTEÚDO DA LOJA</p><h2>Gerenciar campanhas</h2><p>As alterações são publicadas na loja e usadas para calcular o preço dos pedidos.</p></div>
+          <div><button id="back-to-orders" class="admin-secondary-button" type="button">Voltar aos pedidos</button><button id="new-campaign" class="lookup-button" type="button">Adicionar campanha</button></div>
+        </header>
+        <p id="campaign-manager-status" class="admin-status" role="status"></p>
+        <div id="campaign-list" class="admin-campaign-list"></div>
+      </section>
     </section>
   </main>
   <dialog id="edit-dialog" class="admin-edit-dialog" aria-labelledby="edit-title">
@@ -55,18 +68,28 @@
         <label>Prazo<select id="edit-terms" required></select></label>
       </div>
       <div id="edit-items" class="admin-edit-items"></div>
-      <section class="admin-edit-campaigns">
-        <div class="admin-campaign-heading">
-          <h3>Campanhas</h3>
-          <div>
-            <select id="campaign-to-add" aria-label="Campanha para adicionar"></select>
-            <button id="add-campaign" class="lookup-button" type="button">Adicionar campanha</button>
-          </div>
-        </div>
-        <div id="edit-campaigns" class="admin-campaigns"></div>
-      </section>
       <div class="admin-edit-footer"><strong>Total: <span id="edit-total">R$ 0,00</span></strong><button class="submit-button" type="submit">Salvar alterações</button></div>
       <p id="edit-status" class="form-error" role="alert" hidden></p>
+    </form>
+  </dialog>
+  <dialog id="campaign-editor" class="admin-edit-dialog admin-campaign-dialog" aria-labelledby="campaign-editor-title">
+    <form id="campaign-editor-form">
+      <div class="admin-edit-heading"><div><p class="eyebrow">CAMPANHA DA LOJA</p><h2 id="campaign-editor-title">Adicionar campanha</h2></div><button id="close-campaign-editor" class="close" type="button" aria-label="Fechar edição">×</button></div>
+      <label class="admin-campaign-field">Título<input id="campaign-title-input" required maxlength="200"></label>
+      <label class="admin-campaign-field">Benefício ou descrição<input id="campaign-benefit-input" maxlength="1500"></label>
+      <label class="admin-campaign-field">Imagem da campanha (JPG, PNG ou WebP, até 2 MB)<input id="campaign-image-file" type="file" accept="image/jpeg,image/png,image/webp"></label>
+      <div class="admin-campaign-image-preview"><img id="campaign-image-preview" alt="Prévia da imagem da campanha" hidden><span id="campaign-image-status" class="form-note">Selecione uma imagem para o banner.</span></div>
+      <section class="admin-campaign-product-section">
+        <h3>Produtos e preços da campanha</h3>
+        <p class="form-note">Informe o preço unitário que esta campanha deve cobrar. Se deixar em branco, será usado o preço atual do catálogo. O preço definido aqui prevalece sobre outras promoções.</p>
+        <div class="admin-campaign-product-add">
+          <label class="admin-campaign-field">Produto<select id="campaign-product-select"></select></label>
+          <button id="add-campaign-product" class="lookup-button" type="button">Adicionar produto</button>
+        </div>
+        <div id="campaign-product-items" class="admin-campaign-items"></div>
+      </section>
+      <div class="admin-edit-footer"><span>Confira título, imagem, quantidades e preços antes de publicar.</span><button class="submit-button" type="submit">Salvar campanha</button></div>
+      <p id="campaign-editor-status" class="form-error" role="alert" hidden></p>
     </form>
   </dialog>
 </body>

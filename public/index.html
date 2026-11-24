@@ -37,22 +37,10 @@
   <p id="install-status" class="install-status" role="status" hidden></p>
   <main>
     <section class="campaign-section" aria-labelledby="campaign-title">
-      <div class="campaign-heading"><div><p class="eyebrow">NOVIDADES PARA VOCÊ</p><h2 id="campaign-title">Campanhas<span>.</span></h2><p>Confira nossas campanhas e oportunidades. Os valores do pedido seguem o catálogo atualizado e podem diferir dos banners.</p></div></div>
+      <div class="campaign-heading"><div><p class="eyebrow">NOVIDADES PARA VOCÊ</p><h2 id="campaign-title">Campanhas<span>.</span></h2><p>Confira nossas campanhas. Quando houver preço especial definido na campanha, ele será aplicado ao pedido.</p></div></div>
       <div class="campaign-carousel" id="campaign-carousel" role="region" aria-roledescription="carrossel" aria-label="Campanhas Ecofitus">
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="1 de 6: 36 B12 e 20 Queimacure grátis"><button type="button" class="campaign-open" data-campaign="b12-queimacure" aria-label="Ver exemplo da campanha 36 B12 e 20 Queimacure grátis"><img src="./images/campaigns/b12-queimacure.jpeg" alt="Campanha 36 B12 e 20 Queimacure grátis"></button></div>
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="2 de 6: B12, 1.000 no Pix" hidden><button type="button" class="campaign-open" data-campaign="b12-pix" aria-label="Ver exemplo da campanha B12, 1.000 no Pix"><img src="./images/campaigns/b12-pix.jpeg" alt="Campanha B12, 1.000 no Pix" loading="lazy"></button></div>
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="3 de 6: Barril de Chopp" hidden><button type="button" class="campaign-open" data-campaign="barril-chopp" aria-label="Ver exemplo da campanha Barril de Chopp"><img src="./images/campaigns/barril-chopp.jpeg" alt="Campanha Barril de Chopp" loading="lazy"></button></div>
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="4 de 6: Q10, B12 e Galinha Pintadinha" hidden><button type="button" class="campaign-open" data-campaign="q10-b12" aria-label="Ver exemplo da campanha Q10, B12 e Galinha Pintadinha"><img src="./images/campaigns/q10-b12.jpeg" alt="Campanha Q10, B12 e Galinha Pintadinha" loading="lazy"></button></div>
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="5 de 6: Regulax" hidden><button type="button" class="campaign-open" data-campaign="regulax" aria-label="Ver exemplo da campanha Regulax"><img src="./images/campaigns/regulax.jpeg" alt="Campanha Regulax" loading="lazy"></button></div>
-        <div class="campaign-slide" role="group" aria-roledescription="slide" aria-label="6 de 6: Show de brindes" hidden><button type="button" class="campaign-open" data-campaign="show-brindes" aria-label="Ver exemplo da campanha Show de brindes"><img src="./images/campaigns/show-brindes.jpeg" alt="Campanha Show de brindes" loading="lazy"></button></div>
-        <div class="campaign-controls" role="group" aria-label="Escolher campanha">
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 1: 36 B12 e 20 Queimacure grátis" aria-current="true"></button>
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 2: B12, 1.000 no Pix"></button>
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 3: Barril de Chopp"></button>
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 4: Q10, B12 e Galinha Pintadinha"></button>
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 5: Regulax"></button>
-          <button type="button" class="campaign-dot" aria-label="Mostrar campanha 6: Show de brindes"></button>
-        </div>
+        <div class="campaign-slides" id="campaign-slides"></div>
+        <div class="campaign-controls" id="campaign-controls" role="group" aria-label="Escolher campanha"></div>
       </div>
     </section>
     <section class="catalog" id="produtos">

@@ -8,6 +8,7 @@ let stale = true;
 let loading = true;
 let catalogRequestInFlight = null;
 let catalogViewKey = '';
+let campaignViewKey = '';
 let submitting = false;
 let promotionFilterActive = false;
 let orderVersion = 0;
@@ -117,6 +118,12 @@ function renderCampaignDialog() {
   $('campaign-message').hidden = true;
   $('campaign-add').disabled = true;
   const config = window.EcofitusCampaigns.campaigns.find((entry) => entry.id === activeCampaign);
+  if (!config) {
+    $('campaign-dialog-title').textContent = 'Campanha indisponível';
+    $('campaign-message').textContent = 'Esta campanha foi removida ou atualizada. Atualize o catálogo para continuar.';
+    $('campaign-message').hidden = false;
+    return;
+  }
   $('campaign-dialog-title').textContent = config.title;
   try {
     const campaign = window.EcofitusCampaigns.getCampaign(activeCampaign, catalog, updatedAt);
@@ -555,10 +562,20 @@ async function fetchCatalog() {
     const nextViewKey = JSON.stringify(data.products.map((product) => [
       product, product.promotions.map((sale) => data.updatedAt >= sale.begin && data.updatedAt < sale.end),
     ]));
-    const refreshCart = loading || catalogViewKey !== nextViewKey || stale !== data.stale;
-    if (updatedAt && catalogViewKey !== nextViewKey) invalidateOrder();
+    const activeCampaigns = Array.isArray(data.campaigns)
+      ? data.campaigns
+      : window.EcofitusCampaigns.campaigns;
+    const nextCampaignViewKey = JSON.stringify(activeCampaigns);
+    const campaignsChanged = campaignViewKey !== nextCampaignViewKey;
+    const refreshCart = loading || catalogViewKey !== nextViewKey || campaignsChanged || stale !== data.stale;
+    if (updatedAt && (catalogViewKey !== nextViewKey || campaignsChanged)) invalidateOrder();
     catalog = data.products;
+    if (typeof window.EcofitusCampaigns.setCampaigns === 'function') {
+      window.EcofitusCampaigns.setCampaigns(activeCampaigns);
+    }
+    if (window.EcofitusExperience) window.EcofitusExperience.renderCampaigns(activeCampaigns);
     catalogViewKey = nextViewKey;
+    campaignViewKey = nextCampaignViewKey;
     updatedAt = data.updatedAt;
     stale = data.stale;
     loading = false;
@@ -614,12 +631,12 @@ $('product-close').addEventListener('click', () => $('product-dialog').close());
 $('product-dialog').addEventListener('click', (event) => {
   if (event.target === $('product-dialog')) $('product-dialog').close();
 });
-document.querySelectorAll('.campaign-open').forEach((button) => {
-  button.addEventListener('click', () => {
-    activeCampaign = button.dataset.campaign;
-    renderCampaignDialog();
-    $('campaign-dialog').showModal();
-  });
+$('campaign-carousel').addEventListener('click', (event) => {
+  const button = event.target.closest('.campaign-open');
+  if (!button) return;
+  activeCampaign = button.dataset.campaign;
+  renderCampaignDialog();
+  $('campaign-dialog').showModal();
 });
 $('campaign-close').addEventListener('click', () => $('campaign-dialog').close());
 $('campaign-dialog').addEventListener('click', (event) => {

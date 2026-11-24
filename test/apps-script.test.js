@@ -26,7 +26,7 @@ function fakeAppsScript() {
     SpreadsheetApp: { openById: () => ({
       getSheetByName: (name) => sheets.get(name),
       insertSheet: (name) => {
-        const sheet = { rows: [], appendRow(row) { this.rows.push(row); }, getLastRow() { return this.rows.length; },
+        const sheet = { rows: [], appendRow(row) { this.rows.push(row); }, deleteRow(row) { this.rows.splice(row - 1, 1); }, getLastRow() { return this.rows.length; },
           getRange(row, col, count = 1, columns = 1) { return {
             getValue: () => this.rows[row - 1][col - 1],
             getValues: () => this.rows.slice(row - 1, row - 1 + count).map((r) => r.slice(col - 1, col - 1 + columns)),
@@ -37,7 +37,18 @@ function fakeAppsScript() {
         sheets.set(name, sheet); return sheet;
       },
     }), flush() {} },
-    Utilities: { DigestAlgorithm: { SHA_256: 'sha256' }, newBlob: (value) => ({ getBytes: () => Buffer.from(value, 'utf8') }), computeDigest: (_, value) => Array.from(crypto.createHash('sha256').update(value).digest()), formatDate: () => '01/01/2026, 12:00:00' },
+    Utilities: {
+      DigestAlgorithm: { SHA_256: 'sha256' },
+      newBlob: (value) => ({ getBytes: () => Buffer.from(value) }),
+      base64Decode: (value) => Array.from(Buffer.from(value, 'base64'), (byte) => byte > 127 ? byte - 256 : byte),
+      computeDigest: (_, value) => Array.from(crypto.createHash('sha256').update(value).digest()),
+      formatDate: () => '01/01/2026, 12:00:00',
+    },
+    DriveApp: {
+      Access: { ANYONE_WITH_LINK: 'anyone' },
+      Permission: { VIEW: 'view' },
+      createFile: () => ({ getId: () => 'drive-image-id', setSharing() {} }),
+    },
     HtmlService: { XFrameOptionsMode: { ALLOWALL: 'allow' }, createHtmlOutput: (html) => ({ html, setXFrameOptionsMode() { return this; } }) },
     ContentService: { MimeType: { JAVASCRIPT: 'js' }, createTextOutput: (text) => ({ text, setMimeType() { return this; } }) },
   });
@@ -171,4 +182,74 @@ test('Apps Script autentica representante e isola, filtra e edita histórico', (
     },
   }).html);
   assert.equal(denied.data.orders.length, 0);
+});
+
+test('Apps Script gerencia campanhas globais e cobra o preço fixo da campanha', () => {
+  const app = fakeAppsScript();
+  app.context.setup();
+  const representatives = app.sheets.get('Representantes');
+  const hash = crypto.createHash('sha256').update('salt:senha-segura').digest('hex');
+  representatives.appendRow(['gabriel@example.com', 'gabriel', 'salt', hash]);
+  const auth = { email: 'gabriel@example.com', password: 'senha-segura' };
+  const responseJson = (html) => JSON.parse(html.slice(
+    html.indexOf('postMessage(') + 'postMessage('.length,
+    html.indexOf(',"https://gabrielrosa-dev.github.io"')
+  ));
+  const request = (action, extra) => responseJson(app.context.doPost({
+    parameter: {
+      nonce: '68b36a0a-27a7-4eaf-870b-231e6cfef229',
+      payload: JSON.stringify({ action, auth, ...extra }),
+    },
+  }).html);
+  const campaign = {
+    id: 'b12-preco-campanha',
+    title: 'B12 por R$ 23,90',
+    benefit: 'Preço especial da campanha',
+    imageUrl: 'https://example.com/campaign.png',
+    items: [{ ean: '7896920307922', quantity: 3, bonus: 0, priceCents: 2390 }],
+  };
+  const saved = request('adminCampaignSave', { campaign });
+  assert.equal(saved.data.campaign.items[0].priceCents, 2390);
+  assert.ok(request('adminCampaignsList').data.campaigns.some((entry) => entry.id === campaign.id));
+
+  const id = '68b36a0a-27a7-4eaf-870b-231e6cfef229';
+  const order = {
+    id, representativeId: 'gabriel', cnpj: '23624691000108', terms: '28 dias',
+    items: [], campaigns: [campaign.id],
+    priceQuote: { items: [], campaigns: [{ id: campaign.id, items: [{ id: 'b12', priceCents: 2390 }] }] },
+  };
+  const ordered = responseJson(app.context.doPost({
+    parameter: { nonce: id, payload: JSON.stringify({ action: 'order', order }) },
+  }).html);
+  assert.equal(ordered.ok, true);
+  const savedOrder = JSON.parse(app.sheets.get('Pedidos').rows[1][9]);
+  assert.equal(savedOrder.totalCents, 7170);
+  assert.equal(savedOrder.campaigns[0].items[0].priceCents, 2390);
+  assert.match(savedOrder.message, /23,90/);
+  assert.doesNotMatch(savedOrder.message, /24,54/);
+
+  assert.equal(request('adminCampaignDelete', { campaignId: campaign.id }).ok, true);
+  assert.ok(!request('adminCampaignsList').data.campaigns.some((entry) => entry.id === campaign.id));
+});
+
+test('Apps Script aceita upload autenticado apenas de formatos de imagem permitidos', () => {
+  const app = fakeAppsScript();
+  app.context.setup();
+  const hash = crypto.createHash('sha256').update('salt:senha-segura').digest('hex');
+  app.sheets.get('Representantes').appendRow(['gabriel@example.com', 'gabriel', 'salt', hash]);
+  const auth = { email: 'gabriel@example.com', password: 'senha-segura' };
+  const nonce = '68b36a0a-27a7-4eaf-870b-231e6cfef229';
+  const call = (mimeType, bytes) => app.context.doPost({
+    parameter: {
+      nonce,
+      payload: JSON.stringify({
+        action: 'adminCampaignImageUpload', auth, mimeType,
+        base64: Buffer.from(bytes).toString('base64'),
+      }),
+    },
+  }).html;
+  const image = call('image/png', [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.match(image, /drive\.google\.com\/thumbnail\?id=drive-image-id/);
+  const invalid = call('image/svg+xml', [60, 115, 118, 103, 62]);
+  assert.match(invalid, /Selecione uma imagem JPG, PNG ou WebP/);
 });

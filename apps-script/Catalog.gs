@@ -64,7 +64,7 @@ const module = { exports: {} };
 function require(name) { if (name === './public/campaigns') return campaignCore_(); if (name === './public/pricing') return pricingCore_(); if (name === './public/terms') return termsCore_(); throw new Error('Módulo desconhecido: ' + name); }
 'use strict';
 
-const { getCampaign, campaigns } = require('./public/campaigns');
+const { getCampaign, campaigns, setCampaigns } = require('./public/campaigns');
 const { unitPrice } = require('./public/pricing');
 const { isValidTerm } = require('./public/terms');
 const MAX_AGE_MS = 90 * 1000;
@@ -243,7 +243,6 @@ function buildOrder(input, catalog, updatedAt, companyName, now = Date.now()) {
     ...lines,
     '',
     `*Total: ${money(result.totalCents)}*`,
-    'Prazo, preços e disponibilidade sujeitos à confirmação comercial.',
   ].join('\n');
 }
 
@@ -251,7 +250,7 @@ function money(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, verifyPriceQuote, MAX_AGE_MS, MINIMUM_CENTS, isValidTerm };
+module.exports = { normalizeCatalog, validCnpj, buildOrder, calculateOrder, verifyPriceQuote, MAX_AGE_MS, MINIMUM_CENTS, isValidTerm, setCampaigns };
 
 return module.exports;
 }
