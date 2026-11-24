@@ -194,8 +194,7 @@ function createOrder_(input) {
       return { id: input.id, url: 'https://wa.me/' + savedRepresentative.whatsapp + '?text=' + encodeURIComponent(saved.message) };
     }
     const createdAt = new Date();
-    const fullMessage = message + '\nNúmero do pedido: ' + input.id + '\nPreparado em: ' +
-      Utilities.formatDate(createdAt, 'America/Sao_Paulo', 'dd/MM/yyyy, HH:mm:ss');
+    const fullMessage = message;
     const saved = { id: input.id, createdAt: createdAt.toISOString(), representativeId: representative.id,
       representativeName: representative.name, cnpj: company.cnpj, companyName: company.name,
       terms: input.terms.trim(), ...order, message: fullMessage, fingerprint };
@@ -314,10 +313,6 @@ function editedOrderMessage_(order, changes) {
   return [
     '*Pedido Ecofitus*', `CNPJ: ${order.cnpj}`, `Razão social: ${changes.companyName}`,
     `Prazo informado: ${changes.terms}`, '', ...lines, '', `*Total: ${money(changes.totalCents)}*`,
-    'Prazo, preços e disponibilidade sujeitos à confirmação comercial.',
-    `Número do pedido: ${order.id}`,
-    `Preparado em: ${new Date(order.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
-    `Alterado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
   ].join('\n');
 }
 

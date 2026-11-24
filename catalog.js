@@ -179,7 +179,6 @@ function buildOrder(input, catalog, updatedAt, companyName, now = Date.now()) {
     ...lines,
     '',
     `*Total: ${money(result.totalCents)}*`,
-    'Prazo, preços e disponibilidade sujeitos à confirmação comercial.',
   ].join('\n');
 }
 
