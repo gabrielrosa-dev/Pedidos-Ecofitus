@@ -66,3 +66,31 @@ test('campanhas dinâmicas renderizam banners e controles de rotação', () => {
   context.rotate();
   assert.deepEqual(slides.map((slide) => slide.hidden), [false, true, true]);
 });
+
+test('campanha conhecida usa banner padrão quando imageUrl estiver ausente', () => {
+  const ids = new Map();
+  const getElementById = (id) => {
+    if (!ids.has(id)) ids.set(id, new Element());
+    return ids.get(id);
+  };
+  const section = new Element();
+  const document = {
+    getElementById,
+    querySelector: () => section,
+    createElement: () => new Element(),
+    createTextNode: (text) => ({ textContent: text }),
+    addEventListener() {},
+  };
+  const window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
+  const context = vm.createContext({
+    document, window, navigator: {}, console,
+    setInterval() { return 1; }, clearInterval() {},
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'experience.js'), 'utf8'), context);
+  context.window.EcofitusExperience.renderCampaigns([
+    { id: 'b12-queimacure', title: '36 B12 + 20 Queimacure grátis' },
+  ]);
+  const slide = getElementById('campaign-slides').children[0];
+  assert.equal(slide.children[0].children[0].src,
+    'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/b12-queimacure.jpeg');
+});

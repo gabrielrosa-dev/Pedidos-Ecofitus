@@ -4,6 +4,14 @@ let slides = [];
 let dots = [];
 let slideIndex = 0;
 let timer;
+const defaultCampaignImages = {
+  'b12-queimacure': 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/b12-queimacure.jpeg',
+  'b12-pix': 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/b12-pix.jpeg',
+  'barril-chopp': 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/barril-chopp.jpeg',
+  'q10-b12': 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/q10-b12.jpeg',
+  regulax: 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/regulax.jpeg',
+  'show-brindes': 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/show-brindes.jpeg',
+};
 
 function showSlide(index) {
   if (!slides.length) return;
@@ -46,9 +54,10 @@ function renderCampaigns(campaigns) {
     button.className = 'campaign-open';
     button.dataset.campaign = campaign.id;
     button.setAttribute('aria-label', `Ver detalhes da campanha ${campaign.title}`);
-    if (campaign.imageUrl) {
+    const imageUrl = campaign.imageUrl || defaultCampaignImages[campaign.id] || '';
+    if (imageUrl) {
       const image = document.createElement('img');
-      image.src = campaign.imageUrl;
+      image.src = imageUrl;
       image.alt = `Campanha ${campaign.title}`;
       image.loading = index === 0 ? 'eager' : 'lazy';
       image.addEventListener('error', () => {
@@ -56,7 +65,7 @@ function renderCampaigns(campaigns) {
         slide.style.removeProperty('--campaign-image');
       });
       button.append(image);
-      const safeUrl = campaign.imageUrl.replace(/["\\\r\n]/g, '');
+      const safeUrl = imageUrl.replace(/["\\\r\n]/g, '');
       slide.style.setProperty('--campaign-image', `url("${safeUrl}")`);
     } else {
       button.append(document.createTextNode(campaign.title));
