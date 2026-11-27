@@ -1,5 +1,5 @@
 'use strict';
-const cacheName = 'ecofitus-offline-v2';
+const cacheName = 'ecofitus-offline-v3';
 const offlineUrl = new URL('./offline.html', self.registration.scope).href;
 
 self.addEventListener('install', (event) => {

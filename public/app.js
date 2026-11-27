@@ -214,6 +214,24 @@ function activeDiscounts(product) {
   });
 }
 
+function hasVariableOffers(product) {
+  if (!activeDiscounts(product).length || product.stock < product.multiple) return false;
+  const quantities = new Set([product.multiple, product.stock]);
+  for (const sale of product.promotions) {
+    if (updatedAt < sale.begin || updatedAt >= sale.end) continue;
+    for (const quantity of [sale.minQuantity, sale.maxQuantity, sale.maxQuantity + 1]) {
+      if (quantity < 1) continue;
+      const aligned = Math.max(product.multiple, Math.ceil(quantity / product.multiple) * product.multiple);
+      if (aligned <= product.stock) quantities.add(aligned);
+    }
+  }
+  const prices = new Set();
+  for (const quantity of quantities) {
+    prices.add(window.EcofitusPricing.unitPrice(product, quantity, updatedAt).priceCents);
+  }
+  return prices.size > 1;
+}
+
 function offerReason(product, sale) {
   const minimum = Math.max(product.multiple, Math.ceil(sale.minQuantity / product.multiple) * product.multiple);
   const quantity = sale.maxQuantity >= 9999
@@ -362,7 +380,7 @@ function renderProducts() {
     info.append(productName);
     info.append(element('p', 'product-code', `Código: ${product.ean || product.id}`));
     if (product.multiple > 1) info.append(element('p', 'product-multiple', `Venda em múltiplos de ${product.multiple}`));
-    if (activeDiscounts(product).length) {
+    if (hasVariableOffers(product)) {
       const offerBanner = element('button', 'product-offer-banner', 'Ofertas');
       offerBanner.type = 'button';
       offerBanner.addEventListener('click', () => {

@@ -464,6 +464,35 @@ test('oculta promoções sem diferença de preço mesmo quando têm título', as
   assert.equal(findOfferButton(), undefined);
 });
 
+test('Ofertas aparece só quando o preço efetivo varia por quantidade', async () => {
+  const { context, get, products, snapshot } = await storefront();
+  const findProductCard = () => get('products').children.find((entry) => entry.children.some((node) =>
+    node.className === 'product-info' && node.children.some((child) =>
+      child.className === 'product-name' && child.textContent === products[0].name)));
+  const findOfferButton = () => {
+    const card = findProductCard();
+    return card.children.find((node) => node.className === 'product-info').children
+      .find((child) => child.className === 'product-offer-banner');
+  };
+
+  products[0].promotions = [{
+    priceCents: 2500, taxesConfirmed: true, begin: 100, end: 500,
+    minQuantity: 1, maxQuantity: 9999,
+  }];
+  snapshot.updatedAt++;
+  await context.loadCatalog();
+  assert.equal(findOfferButton(), undefined);
+  assert.match(findProductCard().className, /promotional/);
+
+  products[0].promotions = [
+    { priceCents: 2500, taxesConfirmed: true, begin: 100, end: 500, minQuantity: 1, maxQuantity: 5 },
+    { priceCents: 2000, taxesConfirmed: true, begin: 100, end: 500, minQuantity: 6, maxQuantity: 9999 },
+  ];
+  snapshot.updatedAt++;
+  await context.loadCatalog();
+  assert.ok(findOfferButton());
+});
+
 test('divergência de preço atualiza o catálogo e pede revisão sem liberar WhatsApp', async () => {
   const { context, get, products, snapshot } = await storefront();
   context.addProduct(products[0]);
