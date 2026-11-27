@@ -51,6 +51,10 @@ function renderCampaigns(campaigns) {
       image.src = campaign.imageUrl;
       image.alt = `Campanha ${campaign.title}`;
       image.loading = index === 0 ? 'eager' : 'lazy';
+      image.addEventListener('error', () => {
+        image.replaceWith(document.createTextNode(campaign.title));
+        slide.style.removeProperty('--campaign-image');
+      });
       button.append(image);
       const safeUrl = campaign.imageUrl.replace(/["\\\r\n]/g, '');
       slide.style.setProperty('--campaign-image', `url("${safeUrl}")`);

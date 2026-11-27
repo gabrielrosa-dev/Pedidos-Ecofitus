@@ -47,6 +47,17 @@ test('pedido e histórico recebem campanha e valores calculados no servidor', ()
   assert.notEqual(fingerprint(order), fingerprint({ ...input, campaigns: ['b12-pix'] }));
 });
 
+test('campanhas conhecidas mantêm o banner padrão se o serviço omitir imageUrl', () => {
+  const previous = campaigns.slice();
+  setCampaigns([{ id: 'b12-queimacure', title: 'Campanha atualizada', benefit: '', items: [] }]);
+  try {
+    assert.equal(campaigns[0].imageUrl,
+      'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/b12-queimacure.jpeg');
+  } finally {
+    setCampaigns(previous);
+  }
+});
+
 test('campanhas usam o preço promocional da quantidade paga', () => {
   const now = Date.now();
   const discounted = products.map((p) => p.id === 'b12' ? { ...p, promotions: [

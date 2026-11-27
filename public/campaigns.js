@@ -13,10 +13,16 @@
     { id: 'regulax', title: 'Regulax — 12 unidades bonificadas', benefit: '12 unidades bonificadas, sujeitas à confirmação comercial.', imageUrl: 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/regulax.jpeg', items: [{ ean: '7896920303979', quantity: 12, bonus: 12 }] },
     { id: 'show-brindes', title: 'Show de brindes — chaleira térmica', benefit: '1 chaleira térmica inox 2L 127V, sujeita à confirmação comercial.', imageUrl: 'https://gabrielrosa-dev.github.io/Pedidos-Ecofitus/images/campaigns/show-brindes.jpeg', items: [{ ean: '7896920307922', quantity: 16 }] },
   ];
+  const defaultImageUrls = new Map(campaigns.map((campaign) => [campaign.id, campaign.imageUrl]));
 
   function setCampaigns(nextCampaigns) {
     if (!Array.isArray(nextCampaigns)) throw new Error('Lista de campanhas inválida.');
-    campaigns.splice(0, campaigns.length, ...nextCampaigns);
+    campaigns.splice(0, campaigns.length, ...nextCampaigns.map((campaign) => ({
+      ...campaign,
+      imageUrl: typeof campaign.imageUrl === 'string' && campaign.imageUrl
+        ? campaign.imageUrl
+        : defaultImageUrls.get(campaign.id) || '',
+    })));
   }
 
   function getCampaign(id, products, at = Date.now()) {
