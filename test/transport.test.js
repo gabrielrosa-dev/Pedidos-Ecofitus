@@ -55,7 +55,7 @@ test('consulta o catálogo sem credenciais do navegador', async () => {
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'transport.js'), 'utf8'), context);
   const request = window.ecofitusRequest('/api/catalog');
-  assert.equal(script.crossOrigin, 'anonymous');
+  assert.equal(script.crossOrigin, undefined);
   const callback = new URL(script.src).searchParams.get('callback');
   window[callback]({ ok: true, data: { products: [] } });
   assert.deepEqual(await request, { products: [] });
