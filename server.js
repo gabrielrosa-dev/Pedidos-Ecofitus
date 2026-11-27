@@ -214,7 +214,7 @@ const server = http.createServer(async (req, res) => {
         representative: { id: account.representativeId, name: getRepresentative(account.representativeId).name },
         orders: filtered,
         totalCents,
-        commissionCents: Math.round(totalCents * 10 / 100),
+        commissionCents: Math.round(totalCents * 8 / 100),
       });
     }
     if (req.method === 'GET' && url.pathname === '/api/admin/me') {

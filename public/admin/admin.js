@@ -77,7 +77,7 @@ async function load(throwError = false) {
     const data = await request('', { start: $('start-date').value, end: $('end-date').value });
     $('representative-name').textContent = data.representative.name;
     $('period-total').textContent = money(data.totalCents);
-    $('period-commission').textContent = money(data.commissionCents ?? Math.round(data.totalCents * 10 / 100));
+    $('period-commission').textContent = money(data.commissionCents ?? Math.round(data.totalCents * 8 / 100));
     $('orders').replaceChildren(...data.orders.map(orderCard));
     $('status').textContent = data.orders.length
       ? `${data.orders.length} pedido(s) encontrado(s) no período.`

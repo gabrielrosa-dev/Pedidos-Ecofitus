@@ -157,7 +157,7 @@ test('Apps Script autentica representante e isola, filtra e edita histórico', (
   const listed = request('adminList', { start: '2026-11-01', end: '2026-11-30' });
   assert.equal(listed.data.orders.length, 1);
   assert.equal(listed.data.totalCents, 6000);
-  assert.equal(listed.data.commissionCents, 600);
+  assert.equal(listed.data.commissionCents, 480);
   const changed = request('adminUpdate', {
     orderId: order.id,
     changes: {

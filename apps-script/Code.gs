@@ -433,7 +433,7 @@ function listAdminOrders_(auth, start, end) {
     representative: { id: account.representative.id, name: account.representative.name },
     orders,
     totalCents,
-    commissionCents: Math.round(totalCents * 10 / 100),
+    commissionCents: Math.round(totalCents * 8 / 100),
   };
 }
 
